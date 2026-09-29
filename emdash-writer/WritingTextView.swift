@@ -2,20 +2,30 @@ import AppKit
 import SwiftUI
 
 struct ColumnChange {
-    var title = false
     var body = false
     var style = false
 }
 
 struct WritingColumn: NSViewRepresentable {
-    @Binding var title: String
     @Binding var bodyText: String
+    /// `EditorDocument.textRevision`. The body is only pushed into the view when this moves.
+    var bodyRevision: Int
     var fontChoice: WriterFont
     var fontSize: CGFloat
     var palette: Palette
     var focusMode: Bool
+    var focusDepth: FocusDepth
     var typewriter: Bool
     var gutter: GutterCopy
+    /// `CaretMemory` key for this post.
+    var caretKey: String
+    var wantsFocus: Bool
+    var onFocus: () -> Void
+    var onEscape: () -> Void
+    var onImages: ([ImageSource], Int) -> Void
+    /// Hands the model the page, so an upload can land as an edit on it.
+    var onReady: (QuietTextView) -> Void
+    var site: URL?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -34,16 +44,25 @@ struct WritingColumn: NSViewRepresentable {
         scroll.setContentHuggingPriority(.defaultLow, for: .vertical)
 
         let column = ColumnView()
-        column.titleView.delegate = context.coordinator
         column.bodyView.delegate = context.coordinator
+        column.onWindow = { [weak coordinator = context.coordinator] in coordinator?.windowReady() }
+        column.bodyView.onEscape = { [weak coordinator = context.coordinator] in coordinator?.parent.onEscape() }
+        column.bodyView.onImages = { [weak coordinator = context.coordinator] sources, index in
+            coordinator?.parent.onImages(sources, index)
+        }
         context.coordinator.column = column
         context.coordinator.scroll = scroll
         column.frame = NSRect(x: 0, y: 0, width: 680, height: 400)
         scroll.documentView = column
         scroll.contentView.postsBoundsChangedNotifications = true
         context.coordinator.watchClip(scroll)
+        context.coordinator.watchQuit()
         context.coordinator.apply(self, to: column)
         return scroll
+    }
+
+    static func dismantleNSView(_ scroll: NSScrollView, coordinator: Coordinator) {
+        coordinator.rememberSpot()
     }
 
     func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSScrollView, context: Context) -> CGSize? {
@@ -62,8 +81,11 @@ struct WritingColumn: NSViewRepresentable {
         weak var column: ColumnView?
         weak var scroll: NSScrollView?
         private var applying = false
-        private var widthObserver: NSObjectProtocol?
+        private var observers: [NSObjectProtocol] = []
+        /// Set once the remembered caret is back. Until then there is nothing worth remembering.
+        var restored = false
         private var paintedKey = ""
+        private var syncedRevision = -1
         private var pendingEdit: NSRange?
         private var skipNextCaretRestyle = false
 
@@ -72,19 +94,29 @@ struct WritingColumn: NSViewRepresentable {
         }
 
         deinit {
-            guard let widthObserver else { return }
-            NotificationCenter.default.removeObserver(widthObserver)
+            observers.forEach(NotificationCenter.default.removeObserver)
+        }
+
+        func watchQuit() {
+            let quit = NotificationCenter.default.addObserver(
+                forName: NSApplication.willTerminateNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.rememberSpot()
+            }
+            observers.append(quit)
         }
 
         func watchClip(_ scroll: NSScrollView) {
-            guard widthObserver == nil else { return }
-            widthObserver = NotificationCenter.default.addObserver(
+            let width = NotificationCenter.default.addObserver(
                 forName: NSView.boundsDidChangeNotification,
                 object: scroll.contentView,
                 queue: .main
             ) { [weak self] _ in
                 self?.matchClipWidth()
             }
+            observers.append(width)
         }
 
         private func matchClipWidth() {
@@ -100,13 +132,16 @@ struct WritingColumn: NSViewRepresentable {
             let changed = syncText(parent, column)
             restyleIfNeeded(changed, column)
             layoutIfNeeded(changed, column)
+            parent.onReady(column.bodyView)
+            focusIfWanted()
         }
 
         private func configureColumn(_ parent: WritingColumn, _ column: ColumnView) {
-            column.titleView.placeholder = "Title"
-            column.titleView.configure(look(parent, size: parent.fontSize * 1.22, lineHeight: 1.12, spacing: 0))
+            column.bodyView.placeholder = "Start writing…"
+            column.bodyView.siteURL = parent.site
             column.bodyView.accent = parent.palette.nsAccent
             column.bodyView.focusMode = parent.focusMode
+            column.bodyView.focusDepth = parent.focusDepth
             column.bodyView.typewriter = parent.typewriter
             column.bodyView.configure(
                 look(parent, size: parent.fontSize, lineHeight: 1.32, spacing: parent.fontSize * 0.28))
@@ -123,20 +158,25 @@ struct WritingColumn: NSViewRepresentable {
 
         private func syncText(_ parent: WritingColumn, _ column: ColumnView) -> ColumnChange {
             var changed = ColumnChange()
-            changed.title = column.titleView.string != parent.title
-            changed.body = column.bodyView.string != parent.bodyText
-            assignIfNeeded(changed.title, parent.title, column.titleView)
-            assignIfNeeded(changed.body, parent.bodyText, column.bodyView)
+            changed.body = parent.bodyRevision != syncedRevision
+            syncedRevision = parent.bodyRevision
+            if changed.body { assignKeepingCaret(parent.bodyText, column.bodyView) }
             let styleKey =
-                "\(parent.fontChoice.rawValue)|\(parent.fontSize)|\(parent.focusMode)|\(parent.palette.ink)|\(parent.palette.paper)"
+                "\(parent.fontChoice.rawValue)|\(parent.fontSize)|\(parent.focusMode)|\(parent.focusDepth.rawValue)|\(parent.palette.ink)|\(parent.palette.paper)"
             changed.style = paintedKey != styleKey
             paintedKey = styleKey
             return changed
         }
 
-        private func assignIfNeeded(_ needed: Bool, _ text: String, _ view: NSTextView) {
-            guard needed else { return }
+        /// New text from the site keeps the caret where it was, not at the end.
+        private func assignKeepingCaret(_ text: String, _ view: NSTextView) {
+            guard view.string != text else { return }
+            let caret = view.selectedRange().location
             view.string = text
+            view.setSelectedRange(NSRange(location: min(caret, (text as NSString).length), length: 0))
+            // Undo steps recorded against the old text would land in the wrong places now.
+            view.undoManager?.removeAllActions(withTarget: view)
+            if let storage = view.textStorage { view.undoManager?.removeAllActions(withTarget: storage) }
         }
 
         private func restyleIfNeeded(_ changed: ColumnChange, _ column: ColumnView) {
@@ -145,7 +185,7 @@ struct WritingColumn: NSViewRepresentable {
         }
 
         private func layoutIfNeeded(_ changed: ColumnChange, _ column: ColumnView) {
-            guard changed.body || changed.title || changed.style || column.bounds.width < 2 else { return }
+            guard changed.body || changed.style || column.bounds.width < 2 else { return }
             column.needsLayout = true
         }
 
@@ -158,18 +198,26 @@ struct WritingColumn: NSViewRepresentable {
             return true
         }
 
+        /// No spelling marks on pictures: their folded Markdown would show one as a stray dot.
+        func textView(_ textView: NSTextView, shouldSetSpellingState value: Int, range affectedCharRange: NSRange)
+            -> Int
+        {
+            guard let view = textView as? QuietTextView, !view.allowsSpelling(in: affectedCharRange) else {
+                return value
+            }
+            return 0
+        }
+
         func textDidChange(_ notification: Notification) {
             guard !applying, let view = notification.object as? NSTextView, let column else { return }
-            if view === column.titleView {
-                parent.title = view.string
-            } else if view === column.bodyView {
+            if view === column.bodyView {
                 parent.bodyText = view.string
                 let edited = pendingEdit
                 pendingEdit = nil
                 skipNextCaretRestyle = true
                 column.bodyView.restyle(around: edited)
             }
-            column.needsLayout = true
+            column.noteTyping()
         }
 
         func textViewDidChangeSelection(_ notification: Notification) {
@@ -180,26 +228,22 @@ struct WritingColumn: NSViewRepresentable {
             } else {
                 view.restyleCaretLine()
             }
-            guard view.typewriter, let scroll, let column else { return }
-            guard let layout = view.layoutManager, let container = view.textContainer else { return }
-            let glyphRange = layout.glyphRange(forCharacterRange: view.selectedRange(), actualCharacterRange: nil)
-            let caret = layout.boundingRect(forGlyphRange: glyphRange, in: container)
-            column.layoutSubtreeIfNeeded()
-            let inColumn = view.convert(caret, to: column)
-            let clipHeight = scroll.contentView.bounds.height
-            var origin = scroll.contentView.bounds.origin
-            let target = inColumn.midY - clipHeight * 0.42
-            let limit = max(0, column.bounds.height - clipHeight)
-            origin.y = min(max(0, target), limit)
-            scroll.contentView.setBoundsOrigin(origin)
-            scroll.reflectScrolledClipView(scroll.contentView)
+            guard view.typewriter else { return }
+            centerCaret(view)
         }
     }
 }
 
 final class ColumnView: NSView {
-    let titleView = QuietTextView.editor()
     let bodyView = QuietTextView.editor()
+    var onWindow: (() -> Void)?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        guard window != nil else { return }
+        onWindow?()
+        onWindow = nil
+    }
 
     func noteViewportChanged() {
         let width = enclosingScrollView?.contentSize.width ?? bounds.width
@@ -211,7 +255,6 @@ final class ColumnView: NSView {
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
-        addSubview(titleView)
         addSubview(bodyView)
     }
 
@@ -221,6 +264,24 @@ final class ColumnView: NSView {
     }
 
     private var layingOut = false
+    /// Set by a keystroke: the next layout covers what is on screen instead of the whole post.
+    private var typing = false
+    private var settle: DispatchWorkItem?
+
+    /// A keystroke lays out only down to the bottom of the screen. Everything after the edit point would
+    /// otherwise lay out again on every key: 40ms at 120,000 characters. The whole post settles once typing
+    /// pauses, which fixes the exact height.
+    func noteTyping() {
+        typing = true
+        needsLayout = true
+        settle?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.typing = false
+            self?.needsLayout = true
+        }
+        settle = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
+    }
 
     override func layout() {
         super.layout()
@@ -238,10 +299,10 @@ final class ColumnView: NSView {
         let textWidth = fitted.width
         let x = fitted.origin
         let span = Pace.begin("layout")
-        let titleHeight = measure(titleView, width: textWidth)
-        titleView.frame = NSRect(x: x, y: 72, width: textWidth, height: titleHeight)
-        let bodyY = titleView.frame.maxY + 28
-        let bodyHeight = measure(bodyView, width: textWidth)
+        let bodyY: CGFloat = 72
+        // Pictures run past the text by up to 140pt a side, and stay inside the window.
+        bodyView.imageWidthLimit = min(columnWidth - 48, textWidth + 280)
+        let bodyHeight = typing ? measureVisible(bodyView, width: textWidth) : measure(bodyView, width: textWidth)
         Pace.end(span, detail: "\(bodyView.string.utf16.count)")
         bodyView.frame = NSRect(x: x, y: bodyY, width: textWidth, height: bodyHeight)
         let height = bodyView.frame.maxY + 120
@@ -250,134 +311,60 @@ final class ColumnView: NSView {
         }
     }
 
+    /// Pictures from image lines, centered on the text. The text view draws no background, so they show.
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+        let local = convert(dirtyRect, to: bodyView).insetBy(dx: 0, dy: -1)
+        for item in bodyView.previews(
+            in: NSRect(x: 0, y: local.minY, width: bodyView.bounds.width, height: local.height))
+        {
+            let top = convert(NSPoint(x: 0, y: item.top), from: bodyView).y
+            let size = item.preview.size
+            let frame = NSRect(
+                x: (bodyView.frame.midX - size.width / 2).rounded(), y: top, width: size.width, height: size.height)
+            item.preview.draw(in: frame, placeholder: bodyView.mutedColor)
+            drawSelection(of: item.range, around: frame)
+        }
+    }
+
+    /// A ring when the picture is the selected object, a wash when a longer selection covers it.
+    private func drawSelection(of range: NSRange, around frame: NSRect) {
+        let accent = bodyView.accent
+        if bodyView.isImageObjectSelected(range) {
+            let ring = NSBezierPath(roundedRect: frame.insetBy(dx: -3, dy: -3), xRadius: 10, yRadius: 10)
+            ring.lineWidth = 3
+            accent.setStroke()
+            ring.stroke()
+        } else if range.length > 0, NSIntersectionRange(bodyView.selectedRange(), range).length == range.length {
+            accent.withAlphaComponent(0.28).setFill()
+            NSBezierPath(roundedRect: frame, xRadius: 8, yRadius: 8).fill()
+        }
+    }
+
+    /// Lays out through one screen past the visible part. The height only grows until the post settles,
+    /// so the scroll position never jumps while typing.
+    private func measureVisible(_ view: QuietTextView, width: CGFloat) -> CGFloat {
+        guard let scroll = enclosingScrollView, let layout = view.layoutManager, let container = view.textContainer,
+            abs(container.containerSize.width - max(1, width - view.textContainerInset.width * 2)) <= 0.5
+        else { return measure(view, width: width) }
+        var visible = view.convert(scroll.contentView.bounds, from: scroll.contentView)
+        visible.origin.y -= view.textContainerOrigin.y
+        visible.size.height += scroll.contentView.bounds.height
+        layout.ensureLayout(forBoundingRect: visible, in: container)
+        let laidOut = ceil(layout.usedRect(for: container).height + view.textContainerInset.height * 2 + 8)
+        return max(36, laidOut, view.frame.height)
+    }
+
     private func measure(_ view: QuietTextView, width: CGFloat) -> CGFloat {
         let inset = view.textContainerInset.width * 2
         let textWidth = max(1, width - inset)
         // Assigning the container size invalidates every line. Skip it when the column width has not changed.
         if let container = view.textContainer, abs(container.containerSize.width - textWidth) > 0.5 {
             container.containerSize = NSSize(width: textWidth, height: CGFloat.greatestFiniteMagnitude)
+            view.noteColumnWidthChanged()
         }
         guard let layout = view.layoutManager, let container = view.textContainer else { return 36 }
         layout.ensureLayout(for: container)
         return max(36, ceil(layout.usedRect(for: container).height + view.textContainerInset.height * 2 + 8))
-    }
-}
-
-private struct WritingMeasure {
-    var origin: CGFloat
-    var width: CGFloat
-    var right: CGFloat { origin + width }
-
-    init(columnWidth: CGFloat) {
-        width = min(680, max(240, columnWidth - 72))
-        origin = max(36, (columnWidth - width) / 2)
-    }
-}
-
-final class WriterScroll: NSScrollView {
-    let gutter = PassThroughBox()
-    private var placing = false
-    private var shown = GutterCopy.empty
-
-    override var intrinsicContentSize: NSSize {
-        NSSize(width: NSView.noIntrinsicMetric, height: NSView.noIntrinsicMetric)
-    }
-
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        installGutter()
-    }
-
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        installGutter()
-    }
-
-    override func tile() {
-        super.tile()
-        followViewport()
-    }
-
-    override func setFrameSize(_ newSize: NSSize) {
-        super.setFrameSize(newSize)
-        followViewport()
-    }
-
-    override func viewDidEndLiveResize() {
-        super.viewDidEndLiveResize()
-        followViewport()
-    }
-
-    private func followViewport() {
-        (documentView as? ColumnView)?.noteViewportChanged()
-        placeGutter()
-    }
-
-    func show(_ copy: GutterCopy) {
-        guard shown != copy else { return }
-        shown = copy
-        gutter.host.rootView = PropertiesText(copy: copy)
-        gutter.host.invalidateIntrinsicContentSize()
-        placeGutter()
-    }
-
-    func placeGutter() {
-        guard !placing, bounds.width > 80, bounds.height > 80 else { return }
-        placing = true
-        defer { placing = false }
-        let width: CGFloat = 200
-        let frame = pinned(width: width, height: gutterHeight(width))
-        gutter.isHidden = coversText(frame)
-        guard !gutter.isHidden else { return }
-        gutter.frame = frame
-    }
-
-    private func coversText(_ frame: NSRect) -> Bool {
-        let measure = WritingMeasure(columnWidth: contentSize.width)
-        return measure.right + 24 > frame.minX
-    }
-
-    private func gutterHeight(_ width: CGFloat) -> CGFloat {
-        let host = gutter.host
-        host.setFrameSize(NSSize(width: width, height: 1))
-        host.layoutSubtreeIfNeeded()
-        let intrinsic = host.intrinsicContentSize.height
-        guard intrinsic > 1, intrinsic < 360 else { return 96 }
-        return ceil(intrinsic)
-    }
-
-    private func pinned(width: CGFloat, height: CGFloat) -> NSRect {
-        let x = bounds.maxX - width - 36
-        let y = isFlipped ? bounds.minY + 28 : bounds.maxY - height - 28
-        return NSRect(x: x, y: y, width: width, height: height)
-    }
-
-    private func installGutter() {
-        gutter.translatesAutoresizingMaskIntoConstraints = true
-        gutter.host.sizingOptions = .intrinsicContentSize
-        addSubview(gutter)
-    }
-}
-
-final class PassThroughBox: NSView {
-    let host = NSHostingView(rootView: PropertiesText(copy: .empty))
-
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        host.autoresizingMask = [.width, .height]
-        addSubview(host)
-    }
-
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        host.autoresizingMask = [.width, .height]
-        addSubview(host)
-    }
-
-    override func hitTest(_ point: NSPoint) -> NSView? { nil }
-
-    override func layout() {
-        super.layout()
-        host.frame = bounds
     }
 }

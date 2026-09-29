@@ -7,8 +7,28 @@ extension PortableText {
         for (index, value) in blocks.enumerated() {
             previousWasList = appendBlock(value, index: index, wasList: previousWasList, lines: &lines)
         }
-        return lines.joined(separator: "\n") + "\n"
+        return renumbered(lines).joined(separator: "\n") + "\n"
     }
+
+    /// Numbered items count up within a list, by level. Portable Text keeps no numbers, so reading ignores them.
+    static func renumbered(_ lines: [String]) -> [String] {
+        var counters: [Int: Int] = [:]
+        var inFence = false
+        return lines.map { line in
+            if line.hasPrefix("```") { inFence.toggle() }
+            guard !inFence, let item = line.wholeMatch(of: numberedItem) else {
+                counters = inFence || line.wholeMatch(of: bulletItem) != nil ? counters : [:]
+                return line
+            }
+            let level = item.output.1.count
+            counters = counters.filter { $0.key <= level }
+            counters[level, default: 0] += 1
+            return "\(item.output.1)\(counters[level] ?? 1). \(item.output.2)"
+        }
+    }
+
+    private static let numberedItem = /^( *)\d+\. (.*)$/
+    private static let bulletItem = /^ *[-*+] .*$/
 
     private static func appendBlock(
         _ value: JSONValue,
@@ -45,9 +65,12 @@ extension PortableText {
         wasList: Bool,
         lines: inout [String]
     ) -> Bool {
+        guard let line = faithfulLine(block, render: { renderBlock(block, escaping: $0) }) else {
+            return appendOpaque(block, index: index, lines: &lines)
+        }
         let isList = block["listItem"]?.string != nil
         separate(&lines, index: index, when: blankBeforeText(isList: isList, wasList: wasList))
-        lines.append(renderBlock(block))
+        lines.append(line)
         return isList
     }
 
@@ -79,24 +102,36 @@ extension PortableText {
         return false
     }
 
+    /// A picture line, when it reads back as this exact block. Captions, placeholders, and providers stay fenced.
     private static func imageLine(_ block: [String: JSONValue]) -> String? {
         guard plainImage(block), let url = plainURL(block["asset"]), let alt = plainAlt(block) else { return nil }
-        return "![\(alt)](\(url))"
+        guard let size = plainSize(block) else { return nil }
+        let line = "![\(alt)](\(url)\(size))"
+        return roundTrips(block, as: line) ? line : nil
     }
 
     private static func plainImage(_ block: [String: JSONValue]) -> Bool {
-        let allowed: Set<String> = ["_type", "_key", "alt", "asset"]
+        let allowed: Set<String> = ["_type", "_key", "alt", "asset", "width", "height"]
         return block.keys.allSatisfy(allowed.contains)
     }
 
     private static func plainURL(_ asset: JSONValue?) -> String? {
-        guard let object = asset?.object, object.count == 1, let url = object["url"]?.string else { return nil }
-        guard urlHolds(url) else { return nil }
+        guard let object = asset?.object, Set(object.keys).isSubset(of: ["url", "_ref"]) else { return nil }
+        guard let url = object["url"]?.string, urlHolds(url) else { return nil }
         return url
     }
 
+    /// `" =1200x800"`, `""` without a size, or nil for a size a line cannot carry.
+    private static func plainSize(_ block: [String: JSONValue]) -> String? {
+        let width = block["width"]?.number
+        let height = block["height"]?.number
+        if width == nil && height == nil { return "" }
+        guard let width, let height, width == width.rounded(), height == height.rounded() else { return nil }
+        return " =\(Int(width))x\(Int(height))"
+    }
+
     private static func urlHolds(_ url: String) -> Bool {
-        !url.isEmpty && !url.contains(")") && !url.contains("\n")
+        !url.isEmpty && !url.contains(")") && !url.contains("\n") && !url.contains(" ")
     }
 
     private static func plainAlt(_ block: [String: JSONValue]) -> String? {
@@ -127,8 +162,9 @@ extension PortableText {
         return "<!--ec:block \(json) -->"
     }
 
-    private static func renderBlock(_ block: [String: JSONValue]) -> String {
-        let text = renderSpans(block["children"]?.array ?? [], markDefs: block["markDefs"]?.array ?? [])
+    private static func renderBlock(_ block: [String: JSONValue], escaping: Bool) -> String {
+        let spans = block["children"]?.array ?? []
+        let text = renderSpans(spans, markDefs: block["markDefs"]?.array ?? [], escaping: escaping)
         if let line = listLine(block, text: text) { return line }
         if let line = headingLine(block, text: text) { return line }
         if block["style"]?.string == "blockquote" { return "> \(text)" }
@@ -151,18 +187,21 @@ extension PortableText {
         return String(repeating: "#", count: level) + " " + text
     }
 
-    private static func renderSpans(_ spans: [JSONValue], markDefs: [JSONValue]) -> String {
+    private static func renderSpans(_ spans: [JSONValue], markDefs: [JSONValue], escaping: Bool) -> String {
         var result = ""
         for value in spans {
-            result += renderedSpan(value, markDefs: markDefs)
+            result += renderedSpan(value, markDefs: markDefs, escaping: escaping)
         }
         return result
     }
 
-    private static func renderedSpan(_ value: JSONValue, markDefs: [JSONValue]) -> String {
+    private static func renderedSpan(_ value: JSONValue, markDefs: [JSONValue], escaping: Bool) -> String {
         guard let span = value.object, span["_type"]?.string == "span" else { return "" }
         let marks = span["marks"]?.array?.compactMap(\.string) ?? []
-        return marks.reduce(span["text"]?.string ?? "") { text, mark in
+        let text = span["text"]?.string ?? ""
+        // Code keeps its characters as written; the parser does not look inside backticks.
+        let body = escaping && !marks.contains("code") ? escaped(text) : text
+        return marks.reduce(body) { text, mark in
             apply(mark: mark, to: text, markDefs: markDefs)
         }
     }

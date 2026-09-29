@@ -17,30 +17,50 @@ final class QuietTextView: NSTextView, NSLayoutManagerDelegate {
     var placeholder = ""
     var mutedColor: NSColor = .secondaryLabelColor
     var focusMode = false
+    var focusDepth = FocusDepth.muted
     var typewriter = false
     var accent: NSColor = .controlAccentColor
     var syntaxInk: NSColor = .labelColor
+    /// The body font from `configure`. `font` reports whatever the caret sits in, so a heading would scale itself.
+    var configuredFont: NSFont?
+    var baseFont: NSFont? { configuredFont ?? font }
     var hiddenCharacters = IndexSet()
+    var bulletCharacters = IndexSet()
     var styling = false
     var generatingGlyphs = false
     var appliedStyle = ""
     static let headingExpression = try? NSRegularExpression(pattern: #"^(#{1,6})[ \t]+"#)
     static let headingScales = [1.34, 1.22, 1.12, 1.06, 1.03, 1.0]
     var lastCaretLine: NSRange?
+    var onEscape: (() -> Void)?
+    /// Images dropped or pasted, and the character index where they go.
+    var onImages: (([ImageSource], Int) -> Void)?
+    /// Relative image URLs in the text, like `/_emdash/api/media/file/…`, resolve against this.
+    var siteURL: URL?
+    /// The image line whose Markdown is open for editing, by the location of its first character.
+    var revealedImage: Int?
+    /// How wide a picture may be. The column sets it wider than the text, and a change restyles.
+    var imageWidthLimit: CGFloat = 0 {
+        didSet {
+            if abs(imageWidthLimit - oldValue) > 0.5 { noteColumnWidthChanged() }
+        }
+    }
 
     /// TextKit 1. `NSTextView()` on current macOS is TextKit 2 and leaves `layoutManager` nil.
     static func editor() -> QuietTextView {
         GlyphHook.install(on: QuietTextView.self)
         let storage = NSTextStorage()
-        let layout = NSLayoutManager()
+        let layout = FocusLayoutManager()
         storage.addLayoutManager(layout)
         let container = NSTextContainer(size: NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude))
-        container.lineFragmentPadding = 0
+        container.lineFragmentPadding = 5
         container.widthTracksTextView = false
         container.heightTracksTextView = false
         layout.addTextContainer(container)
         let view = QuietTextView(frame: .zero, textContainer: container)
         view.layoutManager?.delegate = view
+        storage.delegate = view
+        view.watchInlineImages()
         return view
     }
 
@@ -77,40 +97,12 @@ final class QuietTextView: NSTextView, NSLayoutManagerDelegate {
     func apply(_ look: TextLook, style: NSMutableParagraphStyle) {
         defaultParagraphStyle = style
         font = look.font
+        configuredFont = look.font
         textColor = look.ink.color
         syntaxInk = look.ink.color
         mutedColor = look.ink.muted
         backgroundColor = look.ink.paper
         insertionPointColor = look.ink.color
-    }
-
-    func applyEditingDefaults() {
-        isRichText = true
-        usesFontPanel = false
-        importsGraphics = false
-        isAutomaticLinkDetectionEnabled = false
-        isAutomaticDataDetectionEnabled = false
-        isEditable = true
-        isSelectable = true
-        allowsUndo = true
-        drawsBackground = true
-        isAutomaticQuoteSubstitutionEnabled = false
-        isAutomaticDashSubstitutionEnabled = false
-        isAutomaticTextReplacementEnabled = false
-        isAutomaticSpellingCorrectionEnabled = false
-        isContinuousSpellCheckingEnabled = true
-        isGrammarCheckingEnabled = false
-        smartInsertDeleteEnabled = false
-        focusRingType = .none
-        layoutManager?.delegate = self
-        textContainerInset = NSSize(width: 2, height: 2)
-        textContainer?.lineFragmentPadding = 0
-        textContainer?.widthTracksTextView = false
-        textContainer?.heightTracksTextView = false
-        isHorizontallyResizable = false
-        isVerticallyResizable = false
-        maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-        minSize = NSSize(width: 0, height: 0)
     }
 
     func typedAttributes(_ font: NSFont, color: NSColor, style: NSParagraphStyle) -> [NSAttributedString.Key: Any] {
@@ -121,21 +113,21 @@ final class QuietTextView: NSTextView, NSLayoutManagerDelegate {
         ]
     }
 
-    func selectionAttributes(_ color: NSColor) -> [NSAttributedString.Key: Any] {
-        [
-            .backgroundColor: accent.withAlphaComponent(0.28),
-            .foregroundColor: color,
-        ]
+    override func cancelOperation(_ sender: Any?) {
+        guard let onEscape else { return super.cancelOperation(sender) }
+        onEscape()
     }
 
     override func paste(_ sender: Any?) {
+        guard !pasteImagesIfAny() else { return }
         pasteAsPlainText(sender)
     }
 
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
-        guard string.isEmpty, !placeholder.isEmpty, let font else { return }
-        let point = NSPoint(x: textContainerInset.width, y: textContainerInset.height)
+        guard textStorage?.length == 0, !placeholder.isEmpty, let font = baseFont else { return }
+        let padding = textContainer?.lineFragmentPadding ?? 0
+        let point = NSPoint(x: textContainerInset.width + padding, y: textContainerInset.height)
         NSAttributedString(
             string: placeholder,
             attributes: [
@@ -160,11 +152,22 @@ final class QuietTextView: NSTextView, NSLayoutManagerDelegate {
         source: GlyphSource
     ) -> GlyphPatch? {
         let count = source.range.length
-        guard count > 0, !generatingGlyphs, !hiddenCharacters.isEmpty else { return nil }
+        guard count > 0, !generatingGlyphs, touchesPatchedCharacters(source) else { return nil }
         var properties = Array(UnsafeBufferPointer(start: props, count: count))
         var glyphs = Array(UnsafeBufferPointer(start: source.glyphs, count: count))
-        guard markNulls(&properties, glyphs: &glyphs, indexes: source.indexes, count: count) else { return nil }
+        let hid = markNulls(&properties, glyphs: &glyphs, indexes: source.indexes, count: count)
+        guard swapBullets(&glyphs, source: source) || hid else { return nil }
         return GlyphPatch(properties: properties, glyphs: glyphs)
+    }
+
+    /// Most glyph runs hold no hidden marker and no bullet. Checking the run's character span once lets those
+    /// go by untouched, instead of copying every glyph to look at each one: on a long post, TextKit hands over
+    /// runs like that on most keystrokes.
+    private func touchesPatchedCharacters(_ source: GlyphSource) -> Bool {
+        let first = Int(source.indexes[0])
+        let last = Int(source.indexes[source.range.length - 1])
+        let span = min(first, last)..<(max(first, last) + 1)
+        return hiddenCharacters.intersects(integersIn: span) || bulletCharacters.intersects(integersIn: span)
     }
 
     func markNulls(
@@ -224,6 +227,46 @@ final class QuietTextView: NSTextView, NSLayoutManagerDelegate {
         for index in values.indices {
             pointer.advanced(by: index).initialize(to: values[index])
         }
+    }
+}
+
+extension QuietTextView {
+    func applyEditingDefaults() {
+        isRichText = true
+        usesFontPanel = false
+        importsGraphics = false
+        isAutomaticLinkDetectionEnabled = false
+        isAutomaticDataDetectionEnabled = false
+        isEditable = true
+        isSelectable = true
+        allowsUndo = true
+        drawsBackground = false
+        isAutomaticQuoteSubstitutionEnabled = false
+        isAutomaticDashSubstitutionEnabled = false
+        isAutomaticTextReplacementEnabled = false
+        isAutomaticSpellingCorrectionEnabled = false
+        isContinuousSpellCheckingEnabled = true
+        isGrammarCheckingEnabled = false
+        smartInsertDeleteEnabled = false
+        usesFindBar = true
+        isIncrementalSearchingEnabled = true
+        focusRingType = .none
+        layoutManager?.delegate = self
+        textContainerInset = NSSize(width: 8, height: 2)
+        textContainer?.lineFragmentPadding = 5
+        textContainer?.widthTracksTextView = false
+        textContainer?.heightTracksTextView = false
+        isHorizontallyResizable = false
+        isVerticallyResizable = false
+        maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        minSize = NSSize(width: 0, height: 0)
+    }
+
+    func selectionAttributes(_ color: NSColor) -> [NSAttributedString.Key: Any] {
+        [
+            .backgroundColor: accent.withAlphaComponent(0.28),
+            .foregroundColor: color,
+        ]
     }
 }
 

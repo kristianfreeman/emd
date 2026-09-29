@@ -144,10 +144,8 @@ final class EditorTests: XCTestCase {
     func testRelayoutAfterAKeystrokeStaysCheap() {
         let column = ColumnView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
         column.bodyView.font = .systemFont(ofSize: 15)
-        column.titleView.font = .systemFont(ofSize: 18)
         let line = "Say **hi** and *there* to [the site](https://example.com)."
         column.bodyView.string = Array(repeating: line, count: 400).joined(separator: "\n")
-        column.titleView.string = "Launch"
         column.bodyView.restyle()
         Pace.reset()
         column.layout()
@@ -161,5 +159,102 @@ final class EditorTests: XCTestCase {
         print("layout cold \(String(format: "%.2f", cold))ms edited \(String(format: "%.2f", edited))ms")
         XCTAssertGreaterThan(cold, 0)
         XCTAssertLessThan(edited, max(8, cold * 0.45))
+    }
+}
+
+extension EditorTests {
+    func testTypingInAHeadingKeepsItsSize() {
+        let view = QuietTextView.editor()
+        view.frame = NSRect(x: 0, y: 0, width: 680, height: 400)
+        view.configure(
+            TextLook(
+                font: .systemFont(ofSize: 15),
+                ink: TextInk(color: .labelColor, muted: .secondaryLabelColor, paper: .textBackgroundColor),
+                lineHeight: 1.3,
+                paragraphSpacing: 4
+            ))
+        view.string = "# Hi"
+        view.setSelectedRange(NSRange(location: 4, length: 0))
+        view.restyle()
+        let first = (view.textStorage?.attribute(.font, at: 2, effectiveRange: nil) as? NSFont)?.pointSize
+        for letter in ["t", "h", "e", "r", "e"] {
+            view.insertText(letter, replacementRange: view.selectedRange())
+            view.restyle(around: view.selectedRange())
+        }
+        let last = (view.textStorage?.attribute(.font, at: 2, effectiveRange: nil) as? NSFont)?.pointSize
+        XCTAssertEqual(first ?? 0, 15 * 1.34, accuracy: 0.01)
+        XCTAssertEqual(last, first)
+    }
+}
+
+extension EditorTests {
+    func testFenceStateAtEachLine() {
+        let view = QuietTextView.editor()
+        let text = "intro ``` not a fence\n```swift\nlet x = 1\n  ```\nafter\n```\nopen at end"
+        let ns = text as NSString
+        func open(before line: String) -> Bool {
+            view.fenceOpen(before: ns.range(of: line).location, ns: ns)
+        }
+        XCTAssertFalse(open(before: "intro"))
+        XCTAssertFalse(open(before: "```swift"))
+        XCTAssertTrue(open(before: "let x"))
+        XCTAssertTrue(open(before: "  ```"))
+        XCTAssertFalse(open(before: "after"))
+        XCTAssertTrue(open(before: "open at end"))
+    }
+}
+
+extension EditorTests {
+    func testHiddenMarkersMoveWithTheText() {
+        XCTAssertEqual(
+            QuietTextView.shifted(IndexSet([2, 3, 10]), edited: NSRange(location: 0, length: 1), delta: 1),
+            IndexSet([3, 4, 11]))
+        XCTAssertEqual(
+            QuietTextView.shifted(IndexSet([2, 3, 10]), edited: NSRange(location: 3, length: 0), delta: -4),
+            IndexSet([2, 6]))
+        let view = QuietTextView.editor()
+        view.font = .systemFont(ofSize: 15)
+        view.string = "One **two** three.\nNext **line** here."
+        view.setSelectedRange(NSRange(location: 0, length: 0))
+        view.restyle()
+        let before = view.hiddenCharacters
+        view.insertText("XY", replacementRange: NSRange(location: 0, length: 0))
+        XCTAssertEqual(view.hiddenCharacters, IndexSet(before.map { $0 + 2 }))
+    }
+
+    /// Typing in the middle of a long post lays out what is on screen, not everything after the edit.
+    func testTypingMidwayThroughALongPostStaysCheap() {
+        let line = "Say **hi** and *there* to [the site](https://example.com), with more words to wrap the line.\n"
+        let column = ColumnView(frame: NSRect(x: 0, y: 0, width: 1000, height: 800))
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 1000, height: 800))
+        scroll.documentView = column
+        column.bodyView.configure(
+            TextLook(
+                font: WriterFont.geistSans.nsFont(size: 16),
+                ink: TextInk(color: .black, muted: .gray, paper: .white),
+                lineHeight: 1.32,
+                paragraphSpacing: 16 * 0.28
+            ))
+        column.bodyView.string = String(repeating: line, count: 1200)
+        column.bodyView.restyle()
+        column.layout()
+        column.bodyView.setSelectedRange(NSRange(location: 60000, length: 0))
+        column.bodyView.scrollRangeToVisible(column.bodyView.selectedRange())
+        var times: [Double] = []
+        for letter in "The quick brown fox jumps over the lazy dog." {
+            let started = CFAbsoluteTimeGetCurrent()
+            let at = column.bodyView.selectedRange().location
+            column.bodyView.insertText(String(letter), replacementRange: NSRange(location: NSNotFound, length: 0))
+            column.bodyView.restyle(around: NSRange(location: at, length: 1))
+            column.noteTyping()
+            column.layoutSubtreeIfNeeded()
+            times.append((CFAbsoluteTimeGetCurrent() - started) * 1000)
+        }
+        let median = times.sorted()[times.count / 2]
+        print("keystroke median \(String(format: "%.2f", median))ms, max \(String(format: "%.2f", times.max() ?? 0))ms")
+        XCTAssertLessThan(median, 8)
+        // Stale marker positions made TextKit rebuild glyphs for the whole post in bursts: over 100ms a key.
+        XCTAssertLessThan(times.max() ?? 0, 30)
+        withExtendedLifetime(scroll) {}
     }
 }

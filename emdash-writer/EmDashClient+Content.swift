@@ -72,7 +72,10 @@ extension EmDashClient {
     fileprivate func pagePath(_ collection: CollectionDef, cursor: String?) -> String {
         var path = "/content/\(Self.path(collection.slug))?limit=100"
         guard let cursor, !cursor.isEmpty else { return path }
-        let encoded = cursor.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? cursor
+        // Cursors are base64, and a bare `+` in a query reads as a space.
+        let unreserved = CharacterSet(
+            charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+        let encoded = cursor.addingPercentEncoding(withAllowedCharacters: unreserved) ?? cursor
         path += "&cursor=\(encoded)"
         return path
     }
@@ -167,7 +170,9 @@ extension EmDashClient {
     fileprivate static func fieldData(_ collection: CollectionDef, _ draft: DraftWrite) -> [String: JSONValue] {
         var data: [String: JSONValue] = [:]
         assign(&data, collection.titleField, draft.text.title)
-        assign(&data, collection.bodyField, draft.text.body)
+        if draft.sendsBody {
+            assign(&data, collection.bodyField, draft.text.body)
+        }
         assign(&data, collection.excerptField, draft.text.excerpt)
         return data
     }

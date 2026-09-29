@@ -1,6 +1,19 @@
 import Foundation
 
 extension AppModel {
+    /// Launch comes back to the post that was open, from the cache, before the site answers.
+    func reopenLast() {
+        guard document == nil, let id = defaults.string(forKey: "lastOpen") else { return }
+        guard entries.contains(where: { $0.id == id }) else { return }
+        openFromList(id)
+    }
+
+    /// Arrowing through the list opens each row it passes. Only the last one is worth finishing.
+    func openFromList(_ id: String) {
+        openTask?.cancel()
+        openTask = Task { await open(id) }
+    }
+
     func open(_ id: String) async {
         if document?.id == id { return }
         if adoptDraft(id) { return }
@@ -23,6 +36,7 @@ extension AppModel {
     private func adoptDraft(_ id: String) -> Bool {
         guard let local = drafts.first(where: { $0.id == id }) else { return false }
         document = local
+        if local.dirty { scheduleAutosave() }
         return true
     }
 
@@ -48,6 +62,7 @@ extension AppModel {
         applyingRemote = true
         placeholder.apply(cached)
         applyingRemote = false
+        restoreJournal(placeholder)
         opened.baselineTitle = cached.title
         opened.baselineBody = cached.body
         return opened
@@ -75,11 +90,13 @@ extension AppModel {
         opened.document.apply(loaded)
         applyingRemote = false
         remember(loaded)
+        restoreJournal(opened.document)
     }
 
     private func noteDirty(_ loaded: LoadedEntry, on document: EditorDocument, title: String, body: String) {
         guard loaded.title == title, loaded.body == body else {
-            notice = "This post also changed on the site. Reload to see that version."
+            conflicted = true
+            notice = "This post changed on the site while you were writing. Your text is safe here."
             return
         }
         document.rev = loaded.rev
@@ -92,13 +109,13 @@ extension AppModel {
     private func noteOpenFailure(_ token: Int, placeholder: EditorDocument, error: Error) {
         guard token == openToken else { return }
         guard !placeholder.loaded else { return }
-        report(error)
+        placeholder.loadError = error.localizedDescription
     }
 
     func prefetch(_ id: String) {
         guard !id.hasPrefix("local-"), id != document?.remoteID, client != nil else { return }
         let site = siteURL?.host ?? ""
-        if LocalStore.entry(site: site, id: id) != nil { return }
+        if LocalStore.hasEntry(site: site, id: id) { return }
         prefetchTask?.cancel()
         prefetchTask = Task { @MainActor in
             await self.prefetchAfterDelay(id)
@@ -141,7 +158,12 @@ extension AppModel {
 
     private func notePullFailure(_ captured: EditorDocument, _ error: Error) {
         guard captured.loaded != true else { return }
-        report(error)
+        captured.loadError = error.localizedDescription
+    }
+
+    func retryOpen() async {
+        document?.loadError = nil
+        await pullOpen()
     }
 
     private func fetchEntry(id: String) async throws -> LoadedEntry {
@@ -166,12 +188,31 @@ extension AppModel {
         }
     }
 
+    /// ⌘N on an empty new post stays on it rather than stacking another Untitled.
     func newPost() {
+        filter = .all
+        query = ""
+        if let empty = drafts.first(where: { $0.remoteID == nil && !$0.dirty && $0.text == DraftText.empty }) {
+            document = empty
+            editorFocusID = empty.localID
+            return
+        }
         let draft = EditorDocument()
+        draft.collectionSlug = collection?.slug
         draft.loaded = true
         draft.status = "draft"
         drafts.insert(draft, at: 0)
         document = draft
+        editorFocusID = draft.localID
+    }
+
+    /// Reloading replaces the open post with the site's copy, so unsent edits ask first.
+    func requestReload() {
+        if document?.dirty == true {
+            confirmReload = true
+            return
+        }
+        Task { await reloadOpen() }
     }
 
     func reloadOpen() async {
@@ -181,6 +222,8 @@ extension AppModel {
         }
         do {
             document.apply(try await client.load(collection: collection, id: remoteID))
+            conflicted = false
+            clearJournal(document)
             await refreshTerms(for: document)
             await loadLibrary()
             notice = ""

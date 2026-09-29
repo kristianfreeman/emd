@@ -9,41 +9,57 @@ struct EditorView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(palette.paper)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .navigationTitle(heading)
-            .navigationSubtitle(model.notice)
+            .navigationSubtitle(subtitle)
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    if let document = model.document, document.loaded {
-                        StatusMarks(document: document, busy: model.busy) { live in
-                            Task { await model.setLive(live) }
-                        } discard: {
-                            Task { await model.discardDraft() }
-                        }
-                    }
-                }
+                EditorToolbar(model: model, palette: palette)
             }
-            .onChange(of: model.document?.body) { _, _ in model.scheduleAutosave() }
-            .onChange(of: model.document?.title) { _, _ in model.scheduleAutosave() }
-            .onChange(of: model.document?.excerpt) { _, _ in model.scheduleAutosave() }
-            .onChange(of: model.document?.slug) { _, _ in model.scheduleAutosave() }
     }
 
-    private var heading: String {
-        let site = model.siteTitle.isEmpty ? "Em Dash Writer" : model.siteTitle
-        guard let document = model.document else { return site }
-        let title = document.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let name = title.isEmpty ? "Untitled" : title
-        return "\(site) › \(name)"
+    /// Site, status, and length. A confirmation like "Published" takes the line for a moment.
+    private var subtitle: String {
+        if !model.flashText.isEmpty { return model.flashText }
+        guard let document = model.document, document.loaded else { return model.offline ? "Offline" : "" }
+        let state = PostState(document)
+        let parts = [siteName, model.offline ? "Offline" : state.label, state.words]
+        return parts.joined(separator: " · ")
+    }
+
+    private var siteName: String {
+        model.siteTitle.isEmpty ? "Emd" : model.siteTitle
+    }
+
+    /// The post title lives in the title bar, where a click renames it.
+    private func postTitle(_ document: EditorDocument) -> Binding<String> {
+        Binding(
+            get: {
+                let title = document.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                return title.isEmpty ? "Untitled" : document.title
+            },
+            set: { value in
+                let title = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                // Committing the placeholder unchanged is not a rename.
+                if document.title.isEmpty && title == "Untitled" { return }
+                document.title = title
+            }
+        )
     }
 
     @ViewBuilder
     private var writing: some View {
         if let document = model.document {
             loadedWriting(document)
+                .navigationTitle(postTitle(document))
         } else {
-            Text("Choose a post, or start a new one.")
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            ContentUnavailableView {
+                Label("No Post Open", systemImage: "square.and.pencil")
+            } description: {
+                Text("Choose a post from the list, or start a new one.")
+            } actions: {
+                Button("New Post") { model.newPost() }
+                    .disabled(model.collection == nil)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .navigationTitle(siteName)
         }
     }
 
@@ -51,21 +67,39 @@ struct EditorView: View {
     private func loadedWriting(_ document: EditorDocument) -> some View {
         if document.loaded {
             WritingColumn(
-                title: Binding(get: { document.title }, set: { document.title = $0 }),
                 bodyText: Binding(get: { document.body }, set: { document.body = $0 }),
+                bodyRevision: document.textRevision,
                 fontChoice: model.fontChoice,
                 fontSize: CGFloat(model.fontSize),
                 palette: palette,
                 focusMode: model.focusMode,
+                focusDepth: model.focusDepth,
                 typewriter: model.typewriter,
-                gutter: GutterCopy(document)
+                gutter: GutterCopy(document),
+                caretKey: model.caretKey(document),
+                wantsFocus: model.editorFocusID == document.localID,
+                onFocus: { model.editorFocusID = nil },
+                onEscape: { model.focusSidebar() },
+                onImages: { sources, index in model.insertImages(sources, at: index) },
+                onReady: { view in model.attachEditor(view, for: document) },
+                site: model.siteURL
             )
             .id(document.localID)
+        } else if let error = document.loadError {
+            ContentUnavailableView {
+                Label("Couldn’t Open This Post", systemImage: "exclamationmark.triangle")
+            } description: {
+                Text(error)
+            } actions: {
+                Button("Try Again") { Task { await model.retryOpen() } }
+                    .disabled(model.client == nil)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             VStack(spacing: 10) {
                 ProgressView()
                     .controlSize(.small)
-                Text(document.title.isEmpty ? "Loading" : document.title)
+                Text(document.title.isEmpty ? "Loading…" : document.title)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -74,92 +108,145 @@ struct EditorView: View {
     }
 }
 
-private struct StatusMarks: View {
-    var document: EditorDocument
-    var busy: Bool
-    var setLive: (Bool) -> Void
-    var discard: () -> Void
+private struct EditorToolbar: ToolbarContent {
+    var model: AppModel
+    var palette: Palette
+
+    var body: some ToolbarContent {
+        ToolbarItemGroup(placement: .primaryAction) {
+            if model.busy || model.uploadsInFlight > 0 {
+                ProgressView()
+                    .controlSize(.small)
+                    .help(model.uploadsInFlight > 0 ? "Uploading images" : "Working")
+            }
+            if !model.notice.isEmpty {
+                NoticeButton(model: model, palette: palette)
+            }
+            if let document = model.document, document.loaded {
+                Button {
+                    model.chooseImages()
+                } label: {
+                    Label("Insert Image", systemImage: "photo")
+                }
+                .help("Insert Image… (⇧⌘I). You can also drop or paste images into the text.")
+                .disabled(model.client == nil)
+                PublishButton(model: model, state: PostState(document))
+            }
+        }
+    }
+}
+
+/// Errors and notes wait behind one button instead of crowding the title bar.
+private struct NoticeButton: View {
+    var model: AppModel
+    var palette: Palette
+    @State private var showing = false
 
     var body: some View {
-        HStack(spacing: 8) {
-            draftMark
-            scheduledMark
-            publishedMark
-            waitingMark
+        Button {
+            showing.toggle()
+        } label: {
+            Label("Notice", systemImage: model.offline ? "wifi.slash" : "exclamationmark.triangle.fill")
+                .labelStyle(.iconOnly)
+                .foregroundStyle(palette.alert)
         }
-        .buttonStyle(.plain)
-        .disabled(busy)
-    }
-
-    private var draftMark: some View {
-        mark(systemName: "pencil", active: isDraft, help: "Draft") {
-            guard !isDraft else { return }
-            setLive(false)
+        .help(model.notice)
+        .popover(isPresented: $showing, arrowEdge: .bottom) {
+            NoticeDetail(model: model, showing: $showing)
         }
     }
+}
 
-    @ViewBuilder
-    private var scheduledMark: some View {
-        if document.status == "scheduled" {
-            Image(systemName: "clock")
-                .symbolVariant(.fill)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.primary)
-                .frame(width: 22, height: 22)
-                .help(scheduledHelp)
-                .accessibilityLabel(scheduledHelp)
-        }
-    }
+private struct NoticeDetail: View {
+    var model: AppModel
+    @Binding var showing: Bool
 
-    private var publishedMark: some View {
-        mark(systemName: "paperplane", active: document.status == "published", help: publishedHelp) {
-            guard document.status != "published" else { return }
-            setLive(true)
-        }
-    }
-
-    @ViewBuilder
-    private var waitingMark: some View {
-        if document.draftRevisionID != nil {
-            Menu {
-                Button("Discard waiting draft", role: .destructive, action: discard)
-            } label: {
-                Image(systemName: "pencil.and.outline")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.primary)
-                    .frame(width: 22, height: 22)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(model.notice)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack {
+                Spacer()
+                actions
             }
-            .menuIndicator(.hidden)
-            .help("Draft waiting")
-            .accessibilityLabel("Draft waiting")
+        }
+        .padding(16)
+        .frame(width: 320)
+    }
+
+    @ViewBuilder
+    private var actions: some View {
+        if model.conflicted {
+            Button("Use Site Version…") {
+                showing = false
+                model.requestReload()
+            }
+            Button("Keep My Version") {
+                showing = false
+                Task { await model.keepMine() }
+            }
+            .keyboardShortcut(.defaultAction)
+        } else {
+            Button("Dismiss") {
+                model.notice = ""
+                showing = false
+            }
+            .keyboardShortcut(.defaultAction)
         }
     }
+}
 
-    private var isDraft: Bool {
-        document.status != "published" && document.status != "scheduled"
-    }
+/// Publish or Update when there is something to send, then a menu for the rest.
+/// A toolbar draws a Menu as its icon alone, so the words live on a plain button beside it.
+private struct PublishButton: View {
+    var model: AppModel
+    var state: PostState
 
-    private var publishedHelp: String {
-        if document.draftRevisionID != nil { return "Published, draft waiting" }
-        return document.status == "published" ? "Published" : "Publish"
-    }
-
-    private var scheduledHelp: String {
-        guard let scheduledAt = document.scheduledAt, let date = EditorDocument.date(scheduledAt) else {
-            return "Scheduled"
+    var body: some View {
+        if state.canPublish {
+            Button(state.publishTitle) { Task { await model.publish() } }
+                .buttonStyle(.borderedProminent)
+                .disabled(model.busy)
+                .help(state.isLive ? "Publish unpublished changes (⇧⌘P)" : "Publish this post (⇧⌘P)")
         }
-        return "Scheduled \(date.formatted(date: .abbreviated, time: .shortened))"
-    }
-
-    private func mark(systemName: String, active: Bool, help: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .symbolVariant(active ? .fill : .none)
-                .font(.system(size: 13, weight: active ? .semibold : .regular))
-                .foregroundStyle(active ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
-                .frame(width: 22, height: 22)
+        Menu {
+            PostActions(model: model, state: state, includesPublish: false)
+        } label: {
+            Label("Post Actions", systemImage: "ellipsis")
         }
-        .help(help)
-        .accessibilityLabel(help)
+        .menuIndicator(.hidden)
+        .help("Post Actions")
+        .disabled(model.busy)
+    }
+}
+
+/// The post's actions, shared by the toolbar menu and the Post menu in the menu bar.
+struct PostActions: View {
+    var model: AppModel
+    var state: PostState
+    var includesPublish = true
+
+    var body: some View {
+        if includesPublish {
+            Button(state.publishTitle == "Update" ? "Publish Changes" : "Publish") {
+                Task { await model.publish() }
+            }
+            .keyboardShortcut("p", modifiers: [.command, .shift])
+            .disabled(!state.canPublish || model.busy)
+        }
+        Button("Unpublish") { Task { await model.unpublish() } }
+            .disabled(!state.isLive || model.busy)
+        Button("Discard Unpublished Changes…") {
+            if let id = state.document.remoteID { model.requestDiscard(id) }
+        }
+        .disabled(!state.canDiscardChanges || model.busy)
+        Divider()
+        Button("Show in Browser") { model.showOpenInBrowser() }
+            .disabled(!model.canShowOpenInBrowser)
+        Button("Show in EmDash Admin") {
+            if let id = state.document.remoteID { model.showInAdmin(id) }
+        }
+        .disabled(state.document.remoteID == nil)
     }
 }

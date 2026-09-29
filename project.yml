@@ -4,6 +4,10 @@ options:
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
+  fileTypes:
+    icon:
+      file: true
+  postGenCommand: sed -i '' '/path = AppIcon.icon/s/lastKnownFileType = wrapper.icon/lastKnownFileType = folder.iconcomposer.icon/' EmDashWriter.xcodeproj/project.pbxproj
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -26,13 +30,18 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kristianfreeman.emdash-writer
-        PRODUCT_NAME: EmDashWriter
+        PRODUCT_NAME: Emd
         PRODUCT_MODULE_NAME: EmDashWriter
         INFOPLIST_FILE: emdash-writer/Info.plist
         GENERATE_INFOPLIST_FILE: YES
         ENABLE_TESTABILITY: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         COMBINE_HIDPI_IMAGES: YES
+      configs:
+        Release:
+          ENABLE_TESTABILITY: NO
+          ENABLE_HARDENED_RUNTIME: YES
+          OTHER_CODE_SIGN_FLAGS: --timestamp
   EmDashWriterTests:
     type: bundle.unit-test
     platform: macOS
@@ -45,7 +54,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.kristianfreeman.emdash-writer.tests
         PRODUCT_NAME: EmDashWriterTests
         GENERATE_INFOPLIST_FILE: YES
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/EmDashWriter.app/Contents/MacOS/EmDashWriter"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Emd.app/Contents/MacOS/Emd"
         BUNDLE_LOADER: "$(TEST_HOST)"
 schemes:
   EmDashWriter:

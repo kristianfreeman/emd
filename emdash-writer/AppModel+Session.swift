@@ -23,6 +23,10 @@ extension AppModel {
             notice = "Paste an API token from the EmDash admin."
             return
         }
+        guard SiteURL.isSecure(url) else {
+            notice = "Use an https address. Over http the token would travel unencrypted."
+            return
+        }
         busy = true
         notice = ""
         defer {
@@ -37,7 +41,35 @@ extension AppModel {
             await loadLibrary()
             await refreshOpenIfNeeded()
         } catch {
+            noteConnectFailure(error, restoring: !storeToken)
+        }
+    }
+
+    /// A launch that cannot reach the site keeps the cached library. A rejected token still goes to Connect.
+    private func noteConnectFailure(_ error: Error, restoring: Bool) {
+        guard restoring, Self.unreachable(error) else {
             report(error)
+            return
+        }
+        offline = true
+        notice = "Offline. Edits are kept on this Mac until the site is back."
+        scheduleReconnect()
+    }
+
+    static func unreachable(_ error: Error) -> Bool {
+        let codes: Set<URLError.Code> = [
+            .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost,
+            .cannotConnectToHost, .dnsLookupFailed, .internationalRoamingOff, .dataNotAllowed,
+        ]
+        guard let url = error as? URLError else { return false }
+        return codes.contains(url.code)
+    }
+
+    private func scheduleReconnect() {
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(30))
+            guard let self, self.offline, self.client == nil else { return }
+            await self.restore()
         }
     }
 
@@ -92,8 +124,12 @@ extension AppModel {
         if request.storeToken {
             try KeychainStore.save(token: request.token)
         }
+        if let current = siteURL?.host, current != request.url.host {
+            leaveSite()
+        }
         client = request.client
         siteURL = request.url
+        offline = false
         siteTitle = titled(session.settings, host: request.url.host)
         tagline = session.settings.tagline
         collections = ordered(session.collections)
@@ -101,6 +137,7 @@ extension AppModel {
         defaults.set(request.url.absoluteString, forKey: "siteURL")
         defaults.set(siteTitle, forKey: "siteTitle")
         keepCollection(session.collections)
+        restoreJournaledDrafts()
     }
 
     private func titled(_ settings: SiteSettings, host: String?) -> String {
@@ -133,17 +170,18 @@ extension AppModel {
         KeychainStore.clear()
         client = nil
         collections = []
-        entries = []
-        drafts = []
-        document = nil
+        leaveSite()
         taxonomies = []
         siteTitle = ""
         tagline = ""
         notice = ""
         warming = false
+        offline = false
+        conflicted = false
     }
 
     func chooseCollection(_ slug: String) async {
+        await save()
         collectionSlug = slug
         defaults.set(slug, forKey: "collection")
         document = nil

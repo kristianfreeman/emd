@@ -1,0 +1,40 @@
+#!/bin/zsh
+# Drive a running Debug build of Emd. See "Probe" in the README.
+#   scripts/probe GET /state
+#   scripts/probe POST /type '{"text": "hello"}'
+#   scripts/probe render editor.png [window]
+set -euo pipefail
+
+info="$HOME/Library/Application Support/EmDashWriter/probe.json"
+if [[ ! -r "$info" ]]; then
+  echo "No probe.json. Is a Debug build of Emd running?" >&2
+  exit 1
+fi
+port=$(plutil -extract port raw -o - "$info")
+token=$(plutil -extract token raw -o - "$info")
+pid=$(plutil -extract pid raw -o - "$info")
+if ! kill -0 "$pid" 2>/dev/null; then
+  echo "probe.json is from an Emd that is no longer running (pid $pid)." >&2
+  exit 1
+fi
+base="http://127.0.0.1:$port"
+auth=(-H "X-Probe-Token: $token")
+
+if [[ "${1:-}" == "render" ]]; then
+  out="${2:-editor.png}"
+  query=""
+  [[ "${3:-}" == "window" ]] && query="?what=window"
+  curl -sS --fail-with-body "${auth[@]}" "$base/render$query" -o "$out"
+  echo "$out"
+  exit 0
+fi
+
+method="${1:-GET}"
+route="${2:-/}"
+body="${3:-}"
+if [[ -n "$body" ]]; then
+  curl -sS "${auth[@]}" -X "$method" -H "Content-Type: application/json" --data "$body" "$base$route"
+else
+  curl -sS "${auth[@]}" -X "$method" "$base$route"
+fi
+echo

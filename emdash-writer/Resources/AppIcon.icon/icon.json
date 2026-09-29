@@ -1,0 +1,59 @@
+{
+  "fill-specializations": [
+    {
+      "value": {
+        "solid": "srgb:0.98824,0.98039,0.97255,1.00000"
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "solid": "srgb:0.09020,0.07843,0.10196,1.00000"
+      }
+    },
+    {
+      "appearance": "tinted",
+      "value": "automatic"
+    }
+  ],
+  "groups": [
+    {
+      "blur-material": 0,
+      "layers": [
+        {
+          "fill": "none",
+          "glass": false,
+          "hidden": false,
+          "name": "Dash",
+          "opacity": 1,
+          "image-name-specializations": [
+            {
+              "value": "dash.png"
+            },
+            {
+              "appearance": "dark",
+              "value": "dash-dark.png"
+            },
+            {
+              "appearance": "tinted",
+              "value": "dash-dark.png"
+            }
+          ]
+        }
+      ],
+      "lighting": "individual",
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      },
+      "specular": false,
+      "translucency": {
+        "enabled": false,
+        "value": 0
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}

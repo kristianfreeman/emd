@@ -100,20 +100,31 @@ struct APIError: LocalizedError, Equatable {
     var errorDescription: String? { message }
 }
 
-struct DraftText: Equatable {
+struct DraftText: Equatable, Codable {
     var title: String
     var body: String
     var excerpt: String
     var slug: String
+
+    static let empty = DraftText(title: "", body: "", excerpt: "", slug: "")
 }
 
 struct DraftWrite: Equatable {
     var text: DraftText
     var rev: String?
     var skipRevision: Bool = false
+    /// Leave the body out when it has not changed. The site merges fields, so the stored body stays exact.
+    var sendsBody = true
 }
 
 enum SiteURL {
+    /// https anywhere, http only for a site running on this Mac or the local network.
+    static func isSecure(_ url: URL) -> Bool {
+        guard url.scheme == "http" else { return true }
+        let host = url.host ?? ""
+        return host == "localhost" || host == "127.0.0.1" || host == "::1" || host.hasSuffix(".local")
+    }
+
     static func normalize(_ raw: String) -> URL? {
         var text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return nil }

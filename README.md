@@ -1,4 +1,4 @@
-# emdash writer
+# Emd
 
 A native Mac app for writing on an [EmDash](https://emdashcms.com/) site. It is a text window, not the admin panel: the sidebar holds the library, the post, and the type, and the page is only the writing.
 
@@ -22,4 +22,26 @@ xcodebuild -scheme EmDashWriter -destination 'platform=macOS' test
 open EmDashWriter.xcodeproj
 ```
 
-The project is signed ad hoc so it runs locally without an Apple team.
+Debug and Release sign with the Apple Development identity in `project.yml`, so a build runs on this Mac. Release turns on the hardened runtime and a secure timestamp. Shipping to other Macs also needs a Developer ID Application certificate and notarization (`xcodebuild archive`, then `notarytool submit` and `stapler staple`).
+
+## Probe
+
+Debug builds run a control channel for scripted checks and for Claude: HTTP on `127.0.0.1`, a random port, and a random token, written to `~/Library/Application Support/EmDashWriter/probe.json` (mode 600). Release builds do not contain it (`#if DEBUG`). `scripts/probe` is the client.
+
+```sh
+scripts/probe GET /                    # the routes
+scripts/probe GET /state               # model: post, dirty, notice, uploads, view settings, first responder
+scripts/probe GET '/editor?text=0'     # selection, caret line, bullets, pictures, scroll
+scripts/probe GET '/layout?from=0&to=400'   # line fragments
+scripts/probe GET '/attributes?at=42'  # everything styled onto one character
+scripts/probe render editor.png        # the page, drawn in the app (no screen-recording permission)
+scripts/probe GET '/stats?reset=1'     # Pace timings (count, mean, p50, p95, max) and memory
+scripts/probe POST /scratch '{"text": "- one\n- two"}'   # a post that never saves; use it for edits
+scripts/probe POST /select '{"location": 5}'
+scripts/probe POST /type '{"text": "hello"}'
+scripts/probe POST /command '{"name": "moveDown", "count": 2}'
+scripts/probe POST /settings '{"focusMode": true, "focusDepth": 3}'
+scripts/probe POST /replay '{"typed": "abc", "at": 60000}'  # timed typing in an offscreen copy
+```
+
+Typing into a real post autosaves it like any edit, so experiments belong in `/scratch`. Publishing, unpublishing, discarding, and trashing are not on the probe.

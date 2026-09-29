@@ -15,7 +15,8 @@ extension PortableText {
     private static let bulletPattern = /^(\s*)[-*+]\s+(.+)$/
     private static let numberPattern = /^(\s*)\d+\.\s+(.+)$/
     private static let fencePattern = /^<!--ec:block (.+) -->$/
-    private static let imagePattern = /^!\[([^\]]*)\]\(([^)]+)\)$/
+    /// `![alt](url)`, or `![alt](url =1200x800)` when the size is known.
+    private static let imagePattern = /^!\[([^\]]*)\]\(([^)\s]+)(?:\s+=(\d+)x(\d+))?\)$/
 
     private static func consume(_ lines: [String], at index: Int, blocks: inout [JSONValue]) -> Int {
         if let next = consumeSpecial(lines, at: index, blocks: &blocks) { return next }
@@ -30,6 +31,9 @@ extension PortableText {
         }
         if line.hasPrefix("```") {
             return consumeFence(lines, at: index, blocks: &blocks)
+        }
+        if isUploading(line) {
+            return index + 1
         }
         if let image = imageBlock(line) {
             blocks.append(image)
@@ -95,14 +99,23 @@ extension PortableText {
         return index + 1
     }
 
+    /// An image still uploading has no file on the site yet. It never leaves this Mac.
+    private static func isUploading(_ line: String) -> Bool {
+        line.hasPrefix("![") && line.contains("](\(uploadingScheme)")
+    }
+
     private static func imageBlock(_ line: String) -> JSONValue? {
         guard let match = line.wholeMatch(of: imagePattern) else { return nil }
-        return .object([
-            "_type": .string("image"),
-            "_key": .string(key()),
-            "alt": .string(String(match.output.1)),
-            "asset": .object(["url": .string(String(match.output.2))]),
-        ])
+        let url = String(match.output.2)
+        var asset: [String: JSONValue] = ["url": .string(url)]
+        if let id = mediaID(url) { asset["_ref"] = .string(id) }
+        var object: [String: JSONValue] = ["_type": .string("image"), "_key": .string(key()), "asset": .object(asset)]
+        if !match.output.1.isEmpty { object["alt"] = .string(String(match.output.1)) }
+        if let width = match.output.3.flatMap({ Double($0) }), let height = match.output.4.flatMap({ Double($0) }) {
+            object["width"] = .number(width)
+            object["height"] = .number(height)
+        }
+        return .object(object)
     }
 
     private static func opaque(_ line: String) -> [String: JSONValue]? {
@@ -140,92 +153,5 @@ extension PortableText {
             "markDefs": .array(inline.markDefs),
             "children": .array(inline.spans),
         ])
-    }
-
-    private static func parseInline(_ text: String) -> (spans: [JSONValue], markDefs: [JSONValue]) {
-        guard let regex = inlinePattern() else { return ([span(text, marks: [])], []) }
-        let matches = regex.matches(in: text, range: NSRange(location: 0, length: (text as NSString).length))
-        guard !matches.isEmpty else { return ([span(text, marks: [])], []) }
-        return filled(walk(matches, in: text as NSString), fallback: text)
-    }
-
-    private static func inlinePattern() -> NSRegularExpression? {
-        try? NSRegularExpression(
-            pattern: #"(\*\*(.+?)\*\*)|(_(.+?)_)|(`(.+?)`)|(\[(.+?)\]\((.+?)\))|(~~(.+?)~~)"#
-        )
-    }
-
-    private struct InlineBuild {
-        var spans: [JSONValue] = []
-        var markDefs: [JSONValue] = []
-        var cursor = 0
-    }
-
-    private static func walk(_ matches: [NSTextCheckingResult], in ns: NSString) -> InlineBuild {
-        var build = InlineBuild()
-        for match in matches {
-            appendMatch(match, ns: ns, build: &build)
-        }
-        return build
-    }
-
-    private static func appendMatch(_ match: NSTextCheckingResult, ns: NSString, build: inout InlineBuild) {
-        appendGap(ns, from: build.cursor, to: match.range.location, spans: &build.spans)
-        appendMarked(Capture(match: match, ns: ns), build: &build)
-        build.cursor = match.range.location + match.range.length
-    }
-
-    private static func appendGap(_ ns: NSString, from cursor: Int, to location: Int, spans: inout [JSONValue]) {
-        guard location > cursor else { return }
-        spans.append(span(ns.substring(with: NSRange(location: cursor, length: location - cursor)), marks: []))
-    }
-
-    private struct Capture {
-        var match: NSTextCheckingResult
-        var ns: NSString
-    }
-
-    private static func appendMarked(_ capture: Capture, build: inout InlineBuild) {
-        if appendCapture(capture, group: 2, mark: "strong", spans: &build.spans) { return }
-        if appendCapture(capture, group: 4, mark: "em", spans: &build.spans) { return }
-        if appendCapture(capture, group: 6, mark: "code", spans: &build.spans) { return }
-        if appendLink(capture, build: &build) { return }
-        _ = appendCapture(capture, group: 11, mark: "strike-through", spans: &build.spans)
-    }
-
-    private static func appendCapture(_ capture: Capture, group: Int, mark: String, spans: inout [JSONValue]) -> Bool {
-        guard capture.match.range(at: group).location != NSNotFound else { return false }
-        spans.append(span(capture.ns.substring(with: capture.match.range(at: group)), marks: [mark]))
-        return true
-    }
-
-    private static func appendLink(_ capture: Capture, build: inout InlineBuild) -> Bool {
-        let label = capture.match.range(at: 8)
-        let href = capture.match.range(at: 9)
-        guard label.location != NSNotFound, href.location != NSNotFound else { return false }
-        let mark = key()
-        build.markDefs.append(linkDef(mark, href: capture.ns.substring(with: href)))
-        build.spans.append(span(capture.ns.substring(with: label), marks: [mark]))
-        return true
-    }
-
-    private static func linkDef(_ mark: String, href: String) -> JSONValue {
-        .object([
-            "_key": .string(mark),
-            "_type": .string("link"),
-            "href": .string(href),
-        ])
-    }
-
-    private static func filled(_ walked: InlineBuild, fallback: String) -> (spans: [JSONValue], markDefs: [JSONValue]) {
-        var spans = walked.spans
-        let ns = fallback as NSString
-        if walked.cursor < ns.length {
-            spans.append(span(ns.substring(from: walked.cursor), marks: []))
-        }
-        if spans.isEmpty {
-            spans.append(span(fallback, marks: []))
-        }
-        return (spans, walked.markDefs)
     }
 }

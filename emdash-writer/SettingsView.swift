@@ -5,63 +5,71 @@ struct SettingsView: View {
 
     var body: some View {
         TabView {
-            SiteForm(model: model, showsDisconnect: true)
-                .formStyle(.grouped)
+            SiteForm(model: model, showsSite: true)
+                .frame(width: 520, height: model.isConnected ? 330 : 250)
                 .tabItem { Label("Site", systemImage: "globe") }
-            writing
+            WritingSettings(model: model)
+                .frame(width: 520, height: 520)
                 .tabItem { Label("Writing", systemImage: "textformat") }
-            library
+            LibrarySettings(model: model)
+                .frame(width: 520, height: 200)
                 .tabItem { Label("Library", systemImage: "books.vertical") }
         }
-        .frame(width: 480, height: 320)
     }
+}
 
-    private var writing: some View {
+private struct WritingSettings: View {
+    @Bindable var model: AppModel
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
         Form {
-            Picker("Appearance", selection: appearance) {
-                ForEach(AppearanceChoice.allCases) { choice in
-                    Text(choice.label).tag(choice)
+            Section("Appearance") {
+                Picker("Theme", selection: appearance) {
+                    ForEach(AppearanceChoice.allCases) { Text($0.label).tag($0) }
                 }
+                .pickerStyle(.segmented)
             }
-            Picker("Font", selection: font) {
-                ForEach(WriterFont.allCases) { choice in
-                    Text(choice.label).tag(choice)
-                }
-            }
-            Stepper(value: size, in: 13...24, step: 1) {
-                Text("Size, \(Int(model.fontSize))")
-            }
-            Toggle("Focus", isOn: focus)
-            Toggle("Typewriter", isOn: typewriter)
+            typeSection
+            focusSection
         }
         .formStyle(.grouped)
     }
 
-    private var library: some View {
-        Form {
-            Picker("Collection", selection: collection) {
-                if model.collections.isEmpty {
-                    Text("Posts").tag("posts")
-                }
-                ForEach(model.collections) { item in
-                    Text(item.label).tag(item.slug)
+    private var typeSection: some View {
+        Section("Type") {
+            Picker("Font", selection: font) {
+                ForEach(WriterFont.allCases) { Text($0.label).tag($0) }
+            }
+            LabeledContent("Size") {
+                Stepper(value: size, in: 13...24, step: 1) {
+                    Text("\(Int(model.fontSize)) pt")
+                        .monospacedDigit()
                 }
             }
-            Text(libraryNote)
+        }
+    }
+
+    private var focusSection: some View {
+        Section {
+            LabeledContent("Depth") {
+                Text(model.focusDepth.label)
+                    .foregroundStyle(.secondary)
+            }
+            Slider(value: depth, in: 0...Double(FocusDepth.allCases.count - 1), step: 1) {
+                EmptyView()
+            } minimumValueLabel: {
+                Image(systemName: "circle.lefthalf.filled")
+            } maximumValueLabel: {
+                Image(systemName: "aqi.medium")
+            }
+            FocusPreview(depth: model.focusDepth, font: model.fontChoice, palette: Palette.resolve(colorScheme))
+        } header: {
+            Text("Focus")
+        } footer: {
+            Text("Turn Focus on with View › Focus (⇧⌘F), and Typewriter with View › Typewriter (⇧⌘T).")
                 .foregroundStyle(.secondary)
         }
-        .formStyle(.grouped)
-    }
-
-    private var libraryNote: String {
-        let names = model.collections.map(\.label)
-        if names.isEmpty {
-            return "Connect a site to see its collections."
-        }
-        if model.collections.contains(where: { $0.slug == "posts" }) {
-            return "The list shows this collection. Posts is the default."
-        }
-        return "This site has no Posts collection. Available: \(names.joined(separator: ", "))."
     }
 
     private var appearance: Binding<AppearanceChoice> {
@@ -76,12 +84,84 @@ struct SettingsView: View {
         Binding(get: { model.fontSize }, set: { model.setFontSize($0) })
     }
 
-    private var focus: Binding<Bool> {
-        Binding(get: { model.focusMode }, set: { model.setFocus($0) })
+    private var depth: Binding<Double> {
+        Binding(
+            get: { Double(model.focusDepth.rawValue) },
+            set: { model.focusDepth = FocusDepth(rawValue: Int($0.rounded())) ?? .muted }
+        )
+    }
+}
+
+/// Three lines on the writing paper: the caret line, and what focus does to its neighbors.
+private struct FocusPreview: View {
+    var depth: FocusDepth
+    var font: WriterFont
+    var palette: Palette
+
+    private let size: CGFloat = 14
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            line("The morning light came in sideways through the blinds.", active: false)
+            line("She wrote one sentence, and then the next one.", active: true)
+            line("Somewhere below, a kettle started to sing.", active: false)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(palette.paper, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(palette.hairline)
+        }
+        .animation(.easeOut(duration: 0.18), value: depth)
     }
 
-    private var typewriter: Binding<Bool> {
-        Binding(get: { model.typewriter }, set: { model.setTypewriter($0) })
+    private func line(_ text: String, active: Bool) -> some View {
+        Text(text)
+            .font(font.font(size: size))
+            .lineLimit(1)
+            .foregroundStyle(active ? palette.ink : dimmed)
+            .blur(radius: active ? 0 : depth.blurRadius(fontSize: size))
+    }
+
+    private var dimmed: Color {
+        Color(nsColor: depth.ink(muted: palette.nsMuted, paper: palette.nsPaper))
+    }
+}
+
+private struct LibrarySettings: View {
+    var model: AppModel
+
+    var body: some View {
+        Form {
+            Section {
+                Picker("Collection", selection: collection) {
+                    if model.collections.isEmpty {
+                        Text("Posts").tag("posts")
+                    }
+                    ForEach(model.collections) { item in
+                        Text(item.label).tag(item.slug)
+                    }
+                }
+                .disabled(model.collections.isEmpty)
+            } footer: {
+                Text(note)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private var note: String {
+        let names = model.collections.map(\.label)
+        if names.isEmpty {
+            return "Connect a site to see its collections."
+        }
+        if model.collections.contains(where: { $0.slug == "posts" }) {
+            return "The sidebar lists this collection. Posts is the default."
+        }
+        return "This site has no Posts collection. Available: \(names.joined(separator: ", "))."
     }
 
     private var collection: Binding<String> {

@@ -81,7 +81,8 @@ struct MarkdownRun: Equatable {
 
 enum MarkdownRuns {
     private static let pattern =
-        #"\*\*(.+?)\*\*|__(.+?)__|(?<!\*)\*(?!\*)(.+?)\*(?!\*)|(?<!_)_(?!_)(.+?)_(?!_)|`([^`]+)`|\[([^\]]+)\]\(([^)\s]+)\)"#
+        #"(?<!\\)\*\*(.+?)\*\*|(?<!\\)__(.+?)__|(?<![\*\\])\*(?!\*)(.+?)\*(?!\*)"#
+        + #"|(?<![_\\\p{L}\p{N}])_(?!_)(.+?)_(?![_\p{L}\p{N}])|(?<!\\)`([^`]+)`|(?<!\\)\[([^\]]+)\]\(([^)\s]+)\)"#
     private static let expression = try? NSRegularExpression(pattern: pattern)
 
     static func inline(in line: String) -> [MarkdownRun] {

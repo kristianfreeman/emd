@@ -186,18 +186,6 @@ extension EmDashClient {
     }
 
     static func date(_ value: String?) -> Date? {
-        guard let value else { return nil }
-        return parsedDate(value, fractional: true) ?? parsedDate(value, fractional: false)
-    }
-
-    static func parsedDate(_ value: String, fractional: Bool) -> Date? {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = dateOptions(fractional)
-        return formatter.date(from: value)
-    }
-
-    static func dateOptions(_ fractional: Bool) -> ISO8601DateFormatter.Options {
-        guard fractional else { return [.withInternetDateTime] }
-        return [.withInternetDateTime, .withFractionalSeconds]
+        EditorDocument.date(value)
     }
 }

@@ -59,7 +59,7 @@ struct PropertiesText: View {
 }
 
 @MainActor private func gutterWords(_ document: EditorDocument) -> String {
-    let words = WriterText.wordCount(title: document.title, body: document.body)
+    let words = document.words
     guard words > 0 else { return "Empty" }
     let minutes = max(1, Int((Double(words) / 220.0).rounded(.up)))
     return words < 40 ? "\(words) words" : "\(words) words · \(minutes) min"

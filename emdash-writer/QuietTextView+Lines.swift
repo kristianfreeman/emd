@@ -14,22 +14,33 @@ extension QuietTextView {
     }
 
     func lineAttributes(_ base: NSFont, editing: Bool, style: LineStyle) -> [NSAttributedString.Key: Any] {
-        [
+        var attributes: [NSAttributedString.Key: Any] = [
             .font: base,
-            .foregroundColor: proseColor(editing),
+            .foregroundColor: syntaxInk,
             .paragraphStyle: style.paragraph,
         ]
+        guard focusMode, !editing else { return attributes }
+        attributes.merge(focusAttributes()) { _, focus in focus }
+        return attributes
     }
 
-    func proseColor(_ editing: Bool) -> NSColor {
-        guard focusMode, !editing else { return syntaxInk }
-        return mutedColor
+    /// What a line away from the caret wears in focus mode.
+    func focusAttributes() -> [NSAttributedString.Key: Any] {
+        let paper = backgroundColor
+        var attributes: [NSAttributedString.Key: Any] = [
+            .foregroundColor: focusDepth.ink(muted: mutedColor, paper: paper)
+        ]
+        let radius = focusDepth.blurRadius(fontSize: baseFont?.pointSize ?? 15)
+        if radius > 0 { attributes[.focusBlur] = radius }
+        return attributes
     }
 
     func styledKind(_ context: LineContext, style: inout LineStyle) -> Bool {
         let text = context.ns.substring(with: context.line)
         if isFence(text) { return fenceResult(context, style: &style) }
         if context.inCode { return codeResult(context, style: &style) }
+        if styleImageLine(context, text: text, style: &style) { return false }
+        styleListLine(context.line, text: text, style: &style)
         styleProse(context.line, text: text, editing: context.editing, style: &style)
         return false
     }

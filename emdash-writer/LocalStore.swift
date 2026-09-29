@@ -4,6 +4,11 @@ import Foundation
 enum LocalStore {
     private static let encoder = JSONEncoder()
     private static let decoder = JSONDecoder()
+    /// Cache writes encode whole posts and libraries, so they happen off the main thread, in order.
+    /// The journal of unsent text stays synchronous: it has to be on disk before a quit finishes.
+    private static let writes = DispatchQueue(label: "LocalStore.writes", qos: .utility)
+    private static let madeLock = NSLock()
+    nonisolated(unsafe) private static var made: [String: URL] = [:]
 
     static func library(site: String, collection: String) -> [ContentSummary]? {
         guard let url = file(site: site, name: "library-\(safe(collection)).json") else { return nil }
@@ -12,9 +17,11 @@ enum LocalStore {
     }
 
     static func storeLibrary(site: String, collection: String, entries: [ContentSummary]) {
-        guard let url = file(site: site, name: "library-\(safe(collection)).json") else { return }
-        guard let data = try? encoder.encode(entries) else { return }
-        try? data.write(to: url, options: .atomic)
+        writes.async {
+            guard let url = file(site: site, name: "library-\(safe(collection)).json") else { return }
+            guard let data = try? JSONEncoder().encode(entries) else { return }
+            try? data.write(to: url, options: .atomic)
+        }
     }
 
     static func entry(site: String, id: String) -> LoadedEntry? {
@@ -24,9 +31,46 @@ enum LocalStore {
     }
 
     static func storeEntry(site: String, entry: LoadedEntry) {
-        guard !entry.id.isEmpty, let url = file(site: site, name: "entry-\(safe(entry.id)).json") else { return }
-        guard let data = try? encoder.encode(entry) else { return }
+        guard !entry.id.isEmpty else { return }
+        writes.async {
+            guard let url = file(site: site, name: "entry-\(safe(entry.id)).json") else { return }
+            guard let data = try? JSONEncoder().encode(entry) else { return }
+            try? data.write(to: url, options: .atomic)
+        }
+    }
+
+    /// Whether a post is cached, without reading it.
+    static func hasEntry(site: String, id: String) -> Bool {
+        guard let url = file(site: site, name: "entry-\(safe(id)).json") else { return false }
+        return FileManager.default.fileExists(atPath: url.path)
+    }
+
+    /// Text written before a save was sent. It is removed once the site has the same text.
+    static func pending(site: String, id: String) -> DraftText? {
+        guard let url = file(site: site, name: "pending-\(safe(id)).json") else { return nil }
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? decoder.decode(DraftText.self, from: data)
+    }
+
+    static func storePending(site: String, id: String, text: DraftText) {
+        guard let url = file(site: site, name: "pending-\(safe(id)).json") else { return }
+        guard let data = try? encoder.encode(text) else { return }
         try? data.write(to: url, options: .atomic)
+    }
+
+    /// Drafts the site never saw, by local id.
+    static func pendingDrafts(site: String) -> [(id: String, text: DraftText)] {
+        guard let root = directory(site: site) else { return [] }
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: root.path)) ?? []
+        return names.filter { $0.hasPrefix("pending-local-") }.compactMap { name in
+            let id = String(name.dropFirst("pending-".count).dropLast(".json".count))
+            return pending(site: site, id: id).map { (id, $0) }
+        }
+    }
+
+    static func clearPending(site: String, id: String) {
+        guard let url = file(site: site, name: "pending-\(safe(id)).json") else { return }
+        try? FileManager.default.removeItem(at: url)
     }
 
     private static func file(site: String, name: String) -> URL? {
@@ -35,6 +79,16 @@ enum LocalStore {
     }
 
     private static func directory(site: String) -> URL? {
+        madeLock.lock()
+        defer { madeLock.unlock() }
+        // A folder removed while the app runs is made again, rather than failing every write after.
+        if let known = made[site], FileManager.default.fileExists(atPath: known.path) { return known }
+        let root = createdDirectory(site: site)
+        made[site] = root
+        return root
+    }
+
+    private static func createdDirectory(site: String) -> URL? {
         do {
             let base = try FileManager.default.url(
                 for: .applicationSupportDirectory,
