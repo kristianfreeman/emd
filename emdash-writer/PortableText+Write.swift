@@ -33,6 +33,9 @@ extension PortableText {
         if type == "code" {
             return appendCode(block, index: index, lines: &lines)
         }
+        if type == "image" {
+            return appendImage(block, index: index, lines: &lines)
+        }
         return appendOpaque(block, index: index, lines: &lines)
     }
 
@@ -61,6 +64,45 @@ extension PortableText {
         lines.append(code)
         lines.append("```")
         return false
+    }
+
+    private static func appendImage(
+        _ block: [String: JSONValue],
+        index: Int,
+        lines: inout [String]
+    ) -> Bool {
+        guard let line = imageLine(block) else {
+            return appendOpaque(block, index: index, lines: &lines)
+        }
+        separate(&lines, index: index, when: true)
+        lines.append(line)
+        return false
+    }
+
+    private static func imageLine(_ block: [String: JSONValue]) -> String? {
+        guard plainImage(block), let url = plainURL(block["asset"]), let alt = plainAlt(block) else { return nil }
+        return "![\(alt)](\(url))"
+    }
+
+    private static func plainImage(_ block: [String: JSONValue]) -> Bool {
+        let allowed: Set<String> = ["_type", "_key", "alt", "asset"]
+        return block.keys.allSatisfy(allowed.contains)
+    }
+
+    private static func plainURL(_ asset: JSONValue?) -> String? {
+        guard let object = asset?.object, object.count == 1, let url = object["url"]?.string else { return nil }
+        guard urlHolds(url) else { return nil }
+        return url
+    }
+
+    private static func urlHolds(_ url: String) -> Bool {
+        !url.isEmpty && !url.contains(")") && !url.contains("\n")
+    }
+
+    private static func plainAlt(_ block: [String: JSONValue]) -> String? {
+        guard let alt = block["alt"] else { return "" }
+        guard let text = alt.string, !text.contains("]"), !text.contains("\n") else { return nil }
+        return text
     }
 
     private static func appendOpaque(_ block: [String: JSONValue], index: Int, lines: inout [String]) -> Bool {

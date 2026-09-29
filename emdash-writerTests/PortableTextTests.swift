@@ -40,22 +40,48 @@ final class PortableTextTests: XCTestCase {
         XCTAssertTrue(again.contains("let x = 1"))
     }
 
-    func testUnknownBlockSurvives() {
+    func testSimpleImageRoundTrip() {
+        let markdown = "Before\n\n![Cover](https://example.com/cover.jpg)\n\nAfter\n"
+        let blocks = PortableText.fromMarkdown(markdown)
+        XCTAssertEqual(blocks.count, 3)
+        XCTAssertEqual(blocks[1].object?["_type"], .string("image"))
+        XCTAssertEqual(blocks[1].object?["alt"], .string("Cover"))
+        XCTAssertEqual(blocks[1].object?["asset"]?.object?["url"], .string("https://example.com/cover.jpg"))
+        XCTAssertNil(blocks[1].object?["asset"]?.object?["_ref"])
+        XCTAssertEqual(PortableText.toMarkdown(blocks), markdown)
+    }
+
+    func testRichImageStaysFenced() {
         let original: JSONValue = .array([
             .object([
-                "_type": .string("image"),
                 "_key": .string("img1"),
+                "_type": .string("image"),
                 "alt": .string("Cover"),
-                "asset": .object(["url": .string("https://example.com/cover.jpg")]),
+                "asset": .object([
+                    "_ref": .string("01HXK"),
+                    "url": .string("/_emdash/api/media/file/01HXK.jpg"),
+                ]),
+                "caption": .string("Night"),
+                "width": .number(1920),
             ])
         ])
         let markdown = PortableText.toMarkdown(original.array ?? [])
         XCTAssertTrue(markdown.contains("<!--ec:block"))
-        let parsed = PortableText.fromMarkdown(markdown)
-        XCTAssertEqual(parsed.count, 1)
-        XCTAssertEqual(parsed[0].object?["_type"], .string("image"))
-        XCTAssertEqual(parsed[0].object?["alt"], .string("Cover"))
-        XCTAssertEqual(parsed[0].object?["asset"]?.object?["url"], .string("https://example.com/cover.jpg"))
+        XCTAssertFalse(markdown.contains("!["))
+        XCTAssertEqual(PortableText.fromMarkdown(markdown), original.array)
+    }
+
+    func testUnknownBlockSurvives() {
+        let original: JSONValue = .array([
+            .object([
+                "_key": .string("html1"),
+                "_type": .string("htmlBlock"),
+                "html": .string("<p>kept</p>"),
+            ])
+        ])
+        let markdown = PortableText.toMarkdown(original.array ?? [])
+        XCTAssertTrue(markdown.contains("<!--ec:block"))
+        XCTAssertEqual(PortableText.fromMarkdown(markdown), original.array)
     }
 
     func testOnlyPortableTextFieldsConvert() {

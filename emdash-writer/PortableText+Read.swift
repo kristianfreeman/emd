@@ -15,6 +15,7 @@ extension PortableText {
     private static let bulletPattern = /^(\s*)[-*+]\s+(.+)$/
     private static let numberPattern = /^(\s*)\d+\.\s+(.+)$/
     private static let fencePattern = /^<!--ec:block (.+) -->$/
+    private static let imagePattern = /^!\[([^\]]*)\]\(([^)]+)\)$/
 
     private static func consume(_ lines: [String], at index: Int, blocks: inout [JSONValue]) -> Int {
         if let next = consumeSpecial(lines, at: index, blocks: &blocks) { return next }
@@ -29,6 +30,10 @@ extension PortableText {
         }
         if line.hasPrefix("```") {
             return consumeFence(lines, at: index, blocks: &blocks)
+        }
+        if let image = imageBlock(line) {
+            blocks.append(image)
+            return index + 1
         }
         if line.trimmingCharacters(in: .whitespaces).isEmpty {
             return index + 1
@@ -88,6 +93,16 @@ extension PortableText {
         }
         blocks.append(block(line, style: "normal"))
         return index + 1
+    }
+
+    private static func imageBlock(_ line: String) -> JSONValue? {
+        guard let match = line.wholeMatch(of: imagePattern) else { return nil }
+        return .object([
+            "_type": .string("image"),
+            "_key": .string(key()),
+            "alt": .string(String(match.output.1)),
+            "asset": .object(["url": .string(String(match.output.2))]),
+        ])
     }
 
     private static func opaque(_ line: String) -> [String: JSONValue]? {
