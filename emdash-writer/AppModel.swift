@@ -47,6 +47,7 @@ final class AppModel {
     var confirmTrash = false
     var confirmReload = false
     var showingDetails = false
+    var showingSchedule = false
     /// Posts whose text is journaled here and not yet on the site. The sidebar marks them.
     var unsentIDs: Set<String> = []
     /// Every term in each taxonomy, loaded when Post Details opens.

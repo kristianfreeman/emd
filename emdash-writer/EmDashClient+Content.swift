@@ -38,6 +38,20 @@ extension EmDashClient {
         try await postAction("publish", collection: collection, id: id)
     }
 
+    /// Publishes the saved draft at `date`. The site refuses times that have passed.
+    func schedule(collection: CollectionDef, id: String, at date: Date) async throws -> LoadedEntry {
+        let at = date.formatted(.iso8601)
+        let saved = try await send(
+            "POST", "/content/\(Self.path(collection.slug))/\(Self.path(id))/schedule",
+            body: .object(["scheduledAt": .string(at)]))
+        return try await stored(saved, collection: collection, id: id)
+    }
+
+    func unschedule(collection: CollectionDef, id: String) async throws -> LoadedEntry {
+        let saved = try await send("DELETE", "/content/\(Self.path(collection.slug))/\(Self.path(id))/schedule")
+        return try await stored(saved, collection: collection, id: id)
+    }
+
     func unpublish(collection: CollectionDef, id: String) async throws -> LoadedEntry {
         try await postAction("unpublish", collection: collection, id: id)
     }

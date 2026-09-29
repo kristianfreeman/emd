@@ -237,6 +237,12 @@ private struct PublishButton: View {
         .menuIndicator(.hidden)
         .help("Post Actions")
         .disabled(model.busy)
+        .popover(isPresented: Bindable(model).showingSchedule, arrowEdge: .bottom) {
+            SchedulePicker { date in
+                model.showingSchedule = false
+                Task { await model.schedule(at: date) }
+            }
+        }
     }
 }
 
@@ -253,6 +259,13 @@ struct PostActions: View {
             }
             .keyboardShortcut("p", modifiers: [.command, .shift])
             .disabled(!state.canPublish || model.busy)
+        }
+        if state.isScheduled {
+            Button("Unschedule") { Task { await model.unschedule() } }
+                .disabled(model.busy)
+        } else {
+            Button("Schedule…") { model.showingSchedule = true }
+                .disabled(state.document.status == "published" && !state.hasUnpublishedChanges || model.busy)
         }
         Button("Unpublish") { Task { await model.unpublish() } }
             .disabled(!state.isLive || model.busy)

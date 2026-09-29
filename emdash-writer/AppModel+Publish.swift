@@ -24,6 +24,26 @@ extension AppModel {
         if done { flash("Unpublished") }
     }
 
+    /// Saves, then asks the site to publish at `date`.
+    func schedule(at date: Date) async {
+        guard let document else { return }
+        notice = ""
+        guard await savedForPublish(document), let remoteID = document.remoteID, let client, let collection else {
+            return
+        }
+        let done = await transition(document) {
+            try await client.schedule(collection: collection, id: remoteID, at: date)
+        }
+        if done { flash("Scheduled for \(date.formatted(date: .abbreviated, time: .shortened))") }
+    }
+
+    func unschedule() async {
+        guard let document, let remoteID = document.remoteID, let client, let collection else { return }
+        notice = ""
+        let done = await transition(document) { try await client.unschedule(collection: collection, id: remoteID) }
+        if done { flash("No longer scheduled") }
+    }
+
     /// Publishing sends what the site already has, so unsaved text goes up first.
     private func savedForPublish(_ document: EditorDocument) async -> Bool {
         if document.dirty || document.remoteID == nil {

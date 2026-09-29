@@ -51,10 +51,17 @@ struct PostState {
         switch document.status {
         case "published" where writesLive && document.dirty: "Published, edits not live yet"
         case "published": hasUnpublishedChanges ? "Published, with unpublished changes" : "Published"
-        case "scheduled": "Scheduled"
+        case "scheduled": scheduledLabel
         default: "Draft"
         }
     }
+
+    private var scheduledLabel: String {
+        guard let date = EditorDocument.date(document.scheduledAt) else { return "Scheduled" }
+        return "Scheduled for \(date.formatted(date: .abbreviated, time: .shortened))"
+    }
+
+    var isScheduled: Bool { document.status == "scheduled" || document.scheduledAt != nil }
 
     var words: String {
         let count = document.words

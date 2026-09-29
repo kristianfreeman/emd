@@ -177,3 +177,28 @@ enum Slug {
 extension String {
     fileprivate var nonEmpty: String? { isEmpty ? nil : self }
 }
+
+/// When to publish. The site rejects a time that has passed; the picker starts an hour out.
+struct SchedulePicker: View {
+    let schedule: (Date) -> Void
+    @State private var date = Calendar.current.date(byAdding: .hour, value: 1, to: .now) ?? .now
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            DatePicker("Publish on", selection: $date, in: Date.now..., displayedComponents: [.date, .hourAndMinute])
+                .datePickerStyle(.graphical)
+                .labelsHidden()
+            HStack {
+                Text(date.formatted(date: .complete, time: .shortened))
+                    .foregroundStyle(.secondary)
+                    .font(.callout)
+                Spacer()
+                Button("Schedule") { schedule(date) }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(date <= .now)
+            }
+        }
+        .padding(14)
+        .frame(width: 340)
+    }
+}

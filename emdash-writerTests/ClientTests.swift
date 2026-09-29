@@ -314,3 +314,16 @@ extension ClientTests {
             EmDashClient.resolved("https://cdn.example/x", site: site)?.absoluteString, "https://cdn.example/x")
     }
 }
+
+extension ClientTests {
+    @MainActor
+    func testScheduledPostsSayWhen() {
+        let document = EditorDocument()
+        document.status = "scheduled"
+        document.scheduledAt = "2030-06-15T09:00:00Z"
+        let state = PostState(document)
+        XCTAssertTrue(state.isScheduled)
+        XCTAssertTrue(state.label.hasPrefix("Scheduled for "), state.label)
+        XCTAssertTrue(state.label.contains("2030"), state.label)
+    }
+}
