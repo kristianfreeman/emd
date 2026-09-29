@@ -1,47 +1,66 @@
 import SwiftUI
 
+struct GutterCopy: Equatable {
+    var headline = ""
+    var terms: [TermGroup] = []
+    var words = ""
+    var slug = ""
+    var excerpt = ""
+
+    static let empty = GutterCopy()
+
+    init() {}
+
+    @MainActor init(_ document: EditorDocument) {
+        headline = gutterHeadline(document)
+        terms = document.termGroups.filter { !$0.value.isEmpty }
+        words = gutterWords(document)
+        slug = document.slug
+        excerpt = document.excerpt.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
 struct PropertiesText: View {
-    var document: EditorDocument
+    var copy: GutterCopy
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(headline)
-            if document.remoteID != nil {
-                ForEach(document.termGroups) { group in
-                    if !group.value.isEmpty {
-                        Text(group.value)
-                    }
-                }
+            Text(copy.headline)
+            ForEach(copy.terms) { term in
+                Text(term.value)
             }
-            Text(wordLine)
-            if !document.slug.isEmpty {
-                Text(document.slug)
+            Text(copy.words)
+            if !copy.slug.isEmpty {
+                Text(copy.slug)
             }
-            if !document.excerpt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Text(document.excerpt)
+            if !copy.excerpt.isEmpty {
+                Text(copy.excerpt)
                     .lineLimit(4)
             }
         }
         .font(.callout)
         .foregroundStyle(.secondary)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .multilineTextAlignment(.leading)
+        .frame(width: 200, alignment: .topLeading)
+        .padding(.trailing, 8)
+        .fixedSize(horizontal: false, vertical: true)
     }
+}
 
-    private var headline: String {
-        switch document.status {
-        case "published":
-            return document.publishedLabel
-        case "scheduled":
-            return "Scheduled"
-        default:
-            return "Draft"
-        }
+@MainActor private func gutterHeadline(_ document: EditorDocument) -> String {
+    switch document.status {
+    case "published":
+        return document.publishedLabel
+    case "scheduled":
+        return "Scheduled"
+    default:
+        return "Draft"
     }
+}
 
-    private var wordLine: String {
-        let words = WriterText.wordCount(title: document.title, body: document.body)
-        if words == 0 { return "Empty" }
-        let minutes = max(1, Int((Double(words) / 220.0).rounded(.up)))
-        return words < 40 ? "\(words) words" : "\(words) words · \(minutes) min"
-    }
+@MainActor private func gutterWords(_ document: EditorDocument) -> String {
+    let words = WriterText.wordCount(title: document.title, body: document.body)
+    guard words > 0 else { return "Empty" }
+    let minutes = max(1, Int((Double(words) / 220.0).rounded(.up)))
+    return words < 40 ? "\(words) words" : "\(words) words · \(minutes) min"
 }

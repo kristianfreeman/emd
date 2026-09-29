@@ -28,7 +28,9 @@ enum KeychainStore {
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
         guard status == errSecSuccess, let fields = item as? [String: Any] else { return nil }
-        guard let data = fields[kSecValueData as String] as? Data, let token = String(data: data, encoding: .utf8), !token.isEmpty else {
+        guard let data = fields[kSecValueData as String] as? Data, let token = String(data: data, encoding: .utf8),
+            !token.isEmpty
+        else {
             return nil
         }
         let comment = fields[kSecAttrComment as String] as? String

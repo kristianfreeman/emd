@@ -45,31 +45,60 @@ enum Pace {
     }
 
     private static func record(_ sample: Sample) {
-        lock.lock()
-        samples.append(sample)
-        if samples.count > 200 {
-            samples.removeFirst(samples.count - 200)
-        }
-        lock.unlock()
-        let noisy = sample.name == "restyle" || sample.name == "layout"
-        let write = !noisy || sample.milliseconds >= 1
-        guard write else { return }
+        remember(sample)
+        guard shouldWrite(sample) else { return }
         let line = String(format: "%.2fms\t%@\t%@\n", sample.milliseconds, sample.name, sample.detail)
         fileQueue.async {
-            guard let url = logURL() else { return }
-            if let handle = try? FileHandle(forWritingTo: url) {
-                defer { try? handle.close() }
-                _ = try? handle.seekToEnd()
-                if let data = line.data(using: .utf8) {
-                    try? handle.write(contentsOf: data)
-                }
-                if let size = try? handle.seekToEnd(), size > 1_000_000 {
-                    try? handle.truncate(atOffset: 0)
-                }
-            } else if let data = line.data(using: .utf8) {
-                try? data.write(to: url)
-            }
+            write(line)
         }
+    }
+
+    private static func remember(_ sample: Sample) {
+        lock.lock()
+        samples.append(sample)
+        trim()
+        lock.unlock()
+    }
+
+    private static func trim() {
+        guard samples.count > 200 else { return }
+        samples.removeFirst(samples.count - 200)
+    }
+
+    private static func shouldWrite(_ sample: Sample) -> Bool {
+        let noisy = sample.name == "restyle" || sample.name == "layout"
+        return !noisy || sample.milliseconds >= 1
+    }
+
+    private static func write(_ line: String) {
+        guard let url = logURL() else { return }
+        guard let handle = try? FileHandle(forWritingTo: url) else {
+            create(line, at: url)
+            return
+        }
+        append(line, to: handle)
+    }
+
+    private static func append(_ line: String, to handle: FileHandle) {
+        defer { try? handle.close() }
+        _ = try? handle.seekToEnd()
+        write(line, to: handle)
+        truncateIfHuge(handle)
+    }
+
+    private static func write(_ line: String, to handle: FileHandle) {
+        guard let data = line.data(using: .utf8) else { return }
+        try? handle.write(contentsOf: data)
+    }
+
+    private static func truncateIfHuge(_ handle: FileHandle) {
+        guard let size = try? handle.seekToEnd(), size > 1_000_000 else { return }
+        try? handle.truncate(atOffset: 0)
+    }
+
+    private static func create(_ line: String, at url: URL) {
+        guard let data = line.data(using: .utf8) else { return }
+        try? data.write(to: url)
     }
 
     private static func logURL() -> URL? {

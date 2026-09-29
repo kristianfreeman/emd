@@ -1,0 +1,33 @@
+#!/bin/zsh
+set -euo pipefail
+
+root=$(cd "$(dirname "$0")/.." && pwd)
+cd "$root"
+
+host="${DEVELOPER_DIR:-$(xcode-select -p)}/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host"
+bin="$root/tools/branch-depth/.build/branch-depth"
+src="$root/tools/branch-depth/main.swift"
+
+mkdir -p "$root/tools/branch-depth/.build"
+if [[ ! -x "$bin" || "$src" -nt "$bin" ]]; then
+  xcrun swiftc -O \
+    -module-name BranchDepth \
+    -I "$host" -L "$host" \
+    -lSwiftSyntax -lSwiftParser \
+    -Xlinker -rpath -Xlinker "$host" \
+    "$src" -o "$bin"
+fi
+
+result=0
+xcrun swift-format lint --strict --recursive --configuration "$root/.swift-format" \
+  emdash-writer emdash-writerTests || result=1
+
+if ! command -v swiftlint >/dev/null 2>&1; then
+  echo "swiftlint is not on PATH. brew install swiftlint" >&2
+  result=1
+else
+  swiftlint lint --strict --config "$root/.swiftlint.yml" || result=1
+fi
+
+"$bin" emdash-writer emdash-writerTests || result=1
+exit "$result"

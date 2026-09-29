@@ -37,44 +37,58 @@ enum WriterFont: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var label: String {
-        switch self {
-        case .geistSans: "Geist Sans"
-        case .geistMono: "Geist Mono"
-        case .system: "System"
-        case .newYork: "New York"
-        case .sfMono: "SF Mono"
-        case .charter: "Charter"
-        case .georgia: "Georgia"
-        }
+        Self.labels[self] ?? rawValue
     }
 
+    private static let labels: [WriterFont: String] = [
+        .geistSans: "Geist Sans",
+        .geistMono: "Geist Mono",
+        .system: "System",
+        .newYork: "New York",
+        .sfMono: "SF Mono",
+        .charter: "Charter",
+        .georgia: "Georgia",
+    ]
+
     func nsFont(size: CGFloat, weight: NSFont.Weight = .regular) -> NSFont {
-        let named: String?
-        switch self {
-        case .geistSans:
-            named = weight.rawValue >= NSFont.Weight.medium.rawValue ? "Geist-Medium" : "Geist-Regular"
-        case .geistMono:
-            named = weight.rawValue >= NSFont.Weight.medium.rawValue ? "GeistMono-Medium" : "GeistMono-Regular"
-        case .system:
-            return .systemFont(ofSize: size, weight: weight)
-        case .newYork:
-            let base = NSFont.systemFont(ofSize: size, weight: weight)
-            if let descriptor = base.fontDescriptor.withDesign(.serif) {
-                return NSFont(descriptor: descriptor, size: size) ?? base
-            }
-            return base
-        case .sfMono:
-            return .monospacedSystemFont(ofSize: size, weight: weight)
-        case .charter:
-            named = "Charter"
-        case .georgia:
-            named = "Georgia"
-        }
-        if let named, let font = NSFont(name: named, size: size) {
-            return font
-        }
-        return .systemFont(ofSize: size, weight: weight)
+        if let face = systemFace(size: size, weight: weight) { return face }
+        return namedFace(size: size, weight: weight)
     }
+
+    private func systemFace(size: CGFloat, weight: NSFont.Weight) -> NSFont? {
+        if self == .system { return .systemFont(ofSize: size, weight: weight) }
+        if self == .sfMono { return .monospacedSystemFont(ofSize: size, weight: weight) }
+        if self == .newYork { return serif(size: size, weight: weight) }
+        return nil
+    }
+
+    private func serif(size: CGFloat, weight: NSFont.Weight) -> NSFont {
+        let base = NSFont.systemFont(ofSize: size, weight: weight)
+        guard let descriptor = base.fontDescriptor.withDesign(.serif) else { return base }
+        return NSFont(descriptor: descriptor, size: size) ?? base
+    }
+
+    private func namedFace(size: CGFloat, weight: NSFont.Weight) -> NSFont {
+        let table = weight.rawValue >= NSFont.Weight.medium.rawValue ? Self.mediumNames : Self.regularNames
+        guard let name = table[self], let font = NSFont(name: name, size: size) else {
+            return .systemFont(ofSize: size, weight: weight)
+        }
+        return font
+    }
+
+    private static let regularNames: [WriterFont: String] = [
+        .geistSans: "Geist-Regular",
+        .geistMono: "GeistMono-Regular",
+        .charter: "Charter",
+        .georgia: "Georgia",
+    ]
+
+    private static let mediumNames: [WriterFont: String] = [
+        .geistSans: "Geist-Medium",
+        .geistMono: "GeistMono-Medium",
+        .charter: "Charter",
+        .georgia: "Georgia",
+    ]
 
     func font(size: CGFloat) -> Font {
         Font(nsFont(size: size))
@@ -124,11 +138,16 @@ struct Palette {
 enum FontBook {
     static func register() {
         for name in ["Geist-Variable", "GeistMono-Variable"] {
-            let url = Bundle.main.url(forResource: name, withExtension: "ttf")
-                ?? Bundle.main.url(forResource: name, withExtension: "ttf", subdirectory: "Fonts")
-                ?? Bundle.main.url(forResource: name, withExtension: "ttf", subdirectory: "Resources/Fonts")
-            guard let url else { continue }
-            CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+            register(name)
         }
+    }
+
+    private static func register(_ name: String) {
+        let url =
+            Bundle.main.url(forResource: name, withExtension: "ttf")
+            ?? Bundle.main.url(forResource: name, withExtension: "ttf", subdirectory: "Fonts")
+            ?? Bundle.main.url(forResource: name, withExtension: "ttf", subdirectory: "Resources/Fonts")
+        guard let url else { return }
+        CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
     }
 }

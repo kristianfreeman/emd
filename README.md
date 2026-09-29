@@ -8,6 +8,12 @@ Posts are edited as Markdown. A Portable Text field is converted on the way in a
 
 Type choices are Geist Sans, Geist Mono, the system sans, New York, SF Mono, Charter, and Georgia. Appearance follows the system, or stays light or dark. Geist is bundled under the SIL Open Font License; see `emdash-writer/Resources/Fonts/OFL.txt`.
 
+## Lint
+
+`scripts/lint` checks formatting with `swift-format`, then structure with SwiftLint and a branching-depth check. SwiftLint is `brew install swiftlint`. `swift-format` comes with Xcode.
+
+Complexity warns at 5 and errors at 8. An `if` inside an `if` warns; a third level errors. Function bodies warn at 40 lines and error at 60. Files warn at 400 lines and error at 600.
+
 ## Run
 
 ```sh

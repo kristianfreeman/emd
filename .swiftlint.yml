@@ -1,0 +1,64 @@
+# Structure only. swift-format owns whitespace and naming.
+# Defaults in SwiftLint 0.65 are warning 10 / error 20 for complexity.
+# These limits are intentionally tighter.
+
+included:
+  - emdash-writer
+  - emdash-writerTests
+
+excluded:
+  - build
+  - DerivedData
+  - .build
+
+only_rules:
+  - cyclomatic_complexity
+  - nesting
+  - function_body_length
+  - closure_body_length
+  - type_body_length
+  - file_length
+  - function_parameter_count
+  - large_tuple
+
+cyclomatic_complexity:
+  warning: 5
+  error: 8
+  ignores_case_statements: false
+
+nesting:
+  type_level:
+    warning: 1
+    error: 2
+  function_level:
+    warning: 1
+    error: 2
+  check_nesting_in_closures_and_statements: true
+
+function_body_length:
+  warning: 40
+  error: 60
+
+closure_body_length:
+  warning: 25
+  error: 40
+
+type_body_length:
+  warning: 200
+  error: 300
+
+file_length:
+  warning: 400
+  error: 600
+  ignore_comment_only_lines: true
+
+function_parameter_count:
+  warning: 4
+  error: 6
+  ignores_default_parameters: true
+
+large_tuple:
+  warning: 2
+  error: 3
+
+reporter: emoji

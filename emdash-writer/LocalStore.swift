@@ -42,7 +42,8 @@ enum LocalStore {
                 appropriateFor: nil,
                 create: true
             )
-            let root = base
+            let root =
+                base
                 .appendingPathComponent("EmDashWriter", isDirectory: true)
                 .appendingPathComponent(safe(site), isDirectory: true)
             try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

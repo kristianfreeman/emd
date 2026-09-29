@@ -19,40 +19,68 @@ struct SiteForm: View {
 
     var body: some View {
         Form {
-            Section {
-                TextField("Site", text: $site, prompt: Text("https://example.com"))
-                SecureField("Token", text: $token, prompt: Text(model.isConnected ? "Stored in Keychain" : "API token"))
-            } footer: {
-                Text("Create the token in the EmDash admin, under Settings.")
+            siteFields
+            noticeLine
+            connectionButtons
+        }
+        .onAppear(perform: prefillSite)
+    }
+
+    private var siteFields: some View {
+        Section {
+            TextField("Site", text: $site, prompt: Text("https://example.com"))
+            SecureField("Token", text: $token, prompt: Text(model.isConnected ? "Stored in Keychain" : "API token"))
+        } footer: {
+            Text("Create the token in the EmDash admin, under Settings.")
+        }
+    }
+
+    @ViewBuilder
+    private var noticeLine: some View {
+        if !model.notice.isEmpty && !model.isConnected {
+            Text(model.notice)
+                .foregroundStyle(.red)
+        }
+    }
+
+    private var connectionButtons: some View {
+        HStack {
+            connectButton
+            disconnectButton
+            openSiteButton
+        }
+    }
+
+    private var connectButton: some View {
+        Button(model.busy ? "Connecting…" : "Connect") {
+            Task { await model.connect(site: site, token: token) }
+        }
+        .buttonStyle(.plain)
+        .disabled(model.busy)
+    }
+
+    @ViewBuilder
+    private var disconnectButton: some View {
+        if showsDisconnect && model.isConnected {
+            Button("Disconnect", role: .destructive) {
+                model.disconnect()
+                token = ""
             }
-            if !model.notice.isEmpty && !model.isConnected {
-                Text(model.notice)
-                    .foregroundStyle(.red)
-            }
-            HStack {
-                Button(model.busy ? "Connecting…" : "Connect") {
-                    Task { await model.connect(site: site, token: token) }
-                }
+            .buttonStyle(.plain)
+            .disabled(model.busy)
+        }
+    }
+
+    @ViewBuilder
+    private var openSiteButton: some View {
+        if model.isConnected {
+            Button("Open Site") { model.openSite() }
                 .buttonStyle(.plain)
-                .disabled(model.busy)
-                if showsDisconnect && model.isConnected {
-                    Button("Disconnect", role: .destructive) {
-                        model.disconnect()
-                        token = ""
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(model.busy)
-                }
-                if model.isConnected {
-                    Button("Open Site") { model.openSite() }
-                        .buttonStyle(.plain)
-                }
-            }
         }
-        .onAppear {
-            if site.isEmpty {
-                site = model.siteURL?.absoluteString ?? ""
-            }
-        }
+    }
+
+    private func prefillSite() {
+        guard site.isEmpty else { return }
+        site = model.siteURL?.absoluteString ?? ""
     }
 }
