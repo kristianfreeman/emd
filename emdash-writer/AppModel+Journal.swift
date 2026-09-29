@@ -50,6 +50,7 @@ extension AppModel {
     func flushBeforeQuit() async {
         guard let document else { return }
         journal(document)
+        guard !postState(document).writesLive else { return }
         let saving = Task { await self.save() }
         let deadline = Task {
             try? await Task.sleep(for: .seconds(4))

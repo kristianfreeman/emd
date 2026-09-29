@@ -15,8 +15,6 @@ extension PortableText {
     private static let bulletPattern = /^(\s*)[-*+]\s+(.+)$/
     private static let numberPattern = /^(\s*)\d+\.\s+(.+)$/
     private static let fencePattern = /^<!--ec:block (.+) -->$/
-    /// `![alt](url)`, or `![alt](url =1200x800)` when the size is known.
-    private static let imagePattern = /^!\[([^\]]*)\]\(([^)\s]+)(?:\s+=(\d+)x(\d+))?\)$/
 
     private static func consume(_ lines: [String], at index: Int, blocks: inout [JSONValue]) -> Int {
         if let next = consumeSpecial(lines, at: index, blocks: &blocks) { return next }
@@ -105,17 +103,9 @@ extension PortableText {
     }
 
     private static func imageBlock(_ line: String) -> JSONValue? {
-        guard let match = line.wholeMatch(of: imagePattern) else { return nil }
-        let url = String(match.output.2)
-        var asset: [String: JSONValue] = ["url": .string(url)]
-        if let id = mediaID(url) { asset["_ref"] = .string(id) }
-        var object: [String: JSONValue] = ["_type": .string("image"), "_key": .string(key()), "asset": .object(asset)]
-        if !match.output.1.isEmpty { object["alt"] = .string(String(match.output.1)) }
-        if let width = match.output.3.flatMap({ Double($0) }), let height = match.output.4.flatMap({ Double($0) }) {
-            object["width"] = .number(width)
-            object["height"] = .number(height)
-        }
-        return .object(object)
+        guard var block = ImageLine(line)?.block else { return nil }
+        block["_key"] = .string(key())
+        return .object(block)
     }
 
     private static func opaque(_ line: String) -> [String: JSONValue]? {

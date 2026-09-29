@@ -15,8 +15,13 @@ struct CollectionDef: Equatable, Identifiable, Sendable {
     var label: String
     var labelSingular: String
     var fields: [FieldDef]
+    /// What the collection turns on. EmDash's default is drafts and revisions.
+    var supports: [String] = ["drafts", "revisions"]
 
     var id: String { slug }
+
+    /// Without revisions, a save to a published post changes the live post itself.
+    var keepsRevisions: Bool { supports.contains("revisions") }
 
     var titleField: FieldDef? {
         if let title = fields.first(where: { $0.slug == "title" && ($0.type == "string" || $0.type == "text") }) {

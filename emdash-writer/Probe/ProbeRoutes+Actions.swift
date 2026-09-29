@@ -90,6 +90,16 @@
             view.doCommand(by: NSSelectorFromString(name + ":"))
         }
 
+        /// `{"style": "bold" | "italic" | "code"}`, as the Format menu does.
+        func format(_ request: ProbeRequest) -> ProbeResponse {
+            let markers = ["bold": "**", "italic": "_", "code": "`"]
+            guard let view, let marker = markers[request.body.object?["style"]?.string ?? ""] else {
+                return Self.failure("Open a post and send {\"style\": \"bold\" | \"italic\" | \"code\"}.")
+            }
+            view.toggleMarker(marker)
+            return .json(.object(["selection": Self.range(view.selectedRange())]))
+        }
+
         /// `{"target": "editor" | "sidebar" | "search"}`
         func focus(_ request: ProbeRequest) -> ProbeResponse {
             switch request.body.object?["target"]?.string {

@@ -48,8 +48,7 @@ enum PortableText {
     }
 
     static func imageLine(media: UploadedMedia, alt: String) -> String {
-        let size = media.width.flatMap { width in media.height.map { " =\(width)x\($0)" } } ?? ""
-        return "![\(alt)](\(media.url)\(size))"
+        ImageLine(url: media.url, alt: alt, width: media.width, height: media.height).markdown
     }
 
     static func key() -> String {
@@ -58,20 +57,54 @@ enum PortableText {
 }
 
 enum WriterText {
-    /// A UTF-16 scan. Splitting a long post into Characters took milliseconds.
     static func wordCount(title: String, body: String) -> Int {
-        words(in: title) + words(in: body)
+        words(in: title) + readableWords(in: body)
     }
 
-    private static func words(in text: String) -> Int {
+    /// Words a reader sees: no pictures, code, fenced blocks, link targets, or list and heading markers.
+    static func readableWords(in markdown: String) -> Int {
         var count = 0
-        var inWord = false
-        for unit in text.utf16 {
-            let space = unit == 0x20 || unit == 0x0A || unit == 0x09 || unit == 0x0D || unit == 0xA0 || unit == 0x2028
-            count += !space && !inWord ? 1 : 0
-            inWord = !space
+        var inCode = false
+        markdown.enumerateLines { line, _ in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            let fence = trimmed.hasPrefix("```")
+            inCode = inCode != fence
+            guard !fence, !inCode, !trimmed.hasPrefix("!["), !trimmed.hasPrefix("<!--ec:block") else { return }
+            count += words(in: prose(line))
         }
         return count
+    }
+
+    private static let linkTarget = try? NSRegularExpression(pattern: #"\]\([^)\s]*\)"#)
+    private static let lineMarker = try? NSRegularExpression(pattern: #"^\s*(?:[-*+]|\d+[.)]|#{1,6}|>)\s+"#)
+
+    private static func prose(_ line: String) -> String {
+        [lineMarker, linkTarget].compactMap { $0 }.reduce(line) { text, expression in
+            let range = NSRange(location: 0, length: (text as NSString).length)
+            return expression.stringByReplacingMatches(in: text, range: range, withTemplate: " ")
+        }
+    }
+
+    /// A UTF-16 scan: a word is a run without spaces that holds a letter or a digit, so `**`, `-`, and `—`
+    /// alone are not words. Splitting a long post into Characters took milliseconds.
+    static func words(in text: String) -> Int {
+        var count = 0
+        var counted = false
+        for unit in text.utf16 {
+            let space = unit == 0x20 || unit == 0x0A || unit == 0x09 || unit == 0x0D || unit == 0xA0 || unit == 0x2028
+            let wordy = !space && isWordy(unit)
+            count += wordy && !counted ? 1 : 0
+            counted = !space && (counted || wordy)
+        }
+        return count
+    }
+
+    private static func isWordy(_ unit: UInt16) -> Bool {
+        if unit < 0x80 {
+            return (0x30...0x39).contains(unit) || (0x41...0x5A).contains(unit) || (0x61...0x7A).contains(unit)
+        }
+        guard let scalar = Unicode.Scalar(unit) else { return true }
+        return CharacterSet.alphanumerics.contains(scalar)
     }
 
     static func editorBody(_ markdown: String) -> String {

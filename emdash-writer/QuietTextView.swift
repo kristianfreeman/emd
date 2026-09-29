@@ -45,6 +45,8 @@ final class QuietTextView: NSTextView, NSLayoutManagerDelegate {
             if abs(imageWidthLimit - oldValue) > 0.5 { noteColumnWidthChanged() }
         }
     }
+    /// How wide a full-width picture may be: the window, less its margins.
+    var imageFullWidth: CGFloat = 0
 
     /// TextKit 1. `NSTextView()` on current macOS is TextKit 2 and leaves `layoutManager` nil.
     static func editor() -> QuietTextView {

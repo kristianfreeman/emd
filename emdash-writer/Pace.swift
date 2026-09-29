@@ -65,7 +65,17 @@ enum Pace {
         samples.removeFirst(samples.count - 200)
     }
 
+    /// The file log is for development. Outside Debug it is off unless `defaults write … paceLog -bool YES`.
+    private static let writesLog: Bool = {
+        #if DEBUG
+            return true
+        #else
+            return UserDefaults.standard.bool(forKey: "paceLog")
+        #endif
+    }()
+
     private static func shouldWrite(_ sample: Sample) -> Bool {
+        guard writesLog else { return false }
         let noisy = sample.name == "restyle" || sample.name == "layout"
         return !noisy || sample.milliseconds >= 1
     }

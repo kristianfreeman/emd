@@ -5,3 +5,4 @@ DerivedData/
 *.xcodeproj/project.xcworkspace/xcuserdata/
 xcuserdata/
 tools/branch-depth/.build/
+dist/

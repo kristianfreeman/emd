@@ -4,9 +4,17 @@ import Foundation
 @MainActor
 struct PostState {
     var document: EditorDocument
+    /// False for a collection without revisions, where saving a published post changes the live post.
+    var keepsRevisions = true
 
-    init(_ document: EditorDocument) {
+    init(_ document: EditorDocument, keepsRevisions: Bool = true) {
         self.document = document
+        self.keepsRevisions = keepsRevisions
+    }
+
+    /// Saving this post would change what readers see right now.
+    var writesLive: Bool {
+        isLive && !keepsRevisions
     }
 
     var isLive: Bool {
@@ -29,7 +37,7 @@ struct PostState {
 
     var publishTitle: String {
         if !isLive { return "Publish" }
-        if hasUnpublishedChanges { return "Update" }
+        if hasUnpublishedChanges { return writesLive ? "Update Live Post" : "Update" }
         return document.status == "scheduled" ? "Scheduled" : "Published"
     }
 
@@ -41,6 +49,7 @@ struct PostState {
 
     var label: String {
         switch document.status {
+        case "published" where writesLive && document.dirty: "Published, edits not live yet"
         case "published": hasUnpublishedChanges ? "Published, with unpublished changes" : "Published"
         case "scheduled": "Scheduled"
         default: "Draft"

@@ -99,16 +99,27 @@ extension QuietTextView {
 
     // MARK: Spelling
 
-    /// Pictures are Markdown and a URL, not words.
+    /// Pictures, link targets, Markdown markers, and inline code are not prose.
     func allowsSpelling(in range: NSRange) -> Bool {
         guard let storage = textStorage, range.length > 0, NSMaxRange(range) <= storage.length else { return true }
+        return !touchesPicture(range, storage: storage) && !touchesMarkup(range)
+    }
+
+    private func touchesMarkup(_ range: NSRange) -> Bool {
+        let ns = string as NSString
+        let line = ns.lineRange(for: range)
+        return MarkdownRuns.inline(in: ns.substring(with: line)).contains { run in
+            let pieces = run.kind == .code ? run.markers + [run.inner] : run.markers
+            return pieces.contains { NSIntersectionRange(offset($0, by: line.location), range).length > 0 }
+        }
+    }
+
+    private func touchesPicture(_ range: NSRange, storage: NSTextStorage) -> Bool {
         var found = false
         storage.enumerateAttribute(.inlineImage, in: range) { value, _, stop in
-            if value != nil {
-                found = true
-                stop.pointee = true
-            }
+            found = value != nil
+            stop.pointee = ObjCBool(found)
         }
-        return !found
+        return found
     }
 }

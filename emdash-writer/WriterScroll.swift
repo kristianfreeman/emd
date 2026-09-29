@@ -17,6 +17,7 @@ final class WriterScroll: NSScrollView {
     let gutter = PassThroughBox()
     private var placing = false
     private var shown = GutterCopy.empty
+    private var shownColor = Color.secondary
     /// Measured once per change of copy. Scrolling moves nothing inside the gutter.
     private var measuredHeight: CGFloat?
 
@@ -54,11 +55,12 @@ final class WriterScroll: NSScrollView {
         placeGutter()
     }
 
-    func show(_ copy: GutterCopy) {
-        guard shown != copy else { return }
+    func show(_ copy: GutterCopy, color: Color) {
+        guard shown != copy || shownColor != color else { return }
         shown = copy
+        shownColor = color
         measuredHeight = nil
-        gutter.host.rootView = PropertiesText(copy: copy)
+        gutter.host.rootView = PropertiesText(copy: copy, color: color)
         gutter.host.invalidateIntrinsicContentSize()
         placeGutter()
     }

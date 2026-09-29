@@ -72,7 +72,7 @@ struct WritingColumn: NSViewRepresentable {
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         guard let scroll = scroll as? WriterScroll, let column = scroll.documentView as? ColumnView else { return }
         scroll.backgroundColor = palette.nsPaper
-        scroll.show(gutter)
+        scroll.show(gutter, color: palette.muted)
         context.coordinator.apply(self, to: column)
     }
 
@@ -301,6 +301,7 @@ final class ColumnView: NSView {
         let span = Pace.begin("layout")
         let bodyY: CGFloat = 72
         // Pictures run past the text by up to 140pt a side, and stay inside the window.
+        bodyView.imageFullWidth = columnWidth - 48
         bodyView.imageWidthLimit = min(columnWidth - 48, textWidth + 280)
         let bodyHeight = typing ? measureVisible(bodyView, width: textWidth) : measure(bodyView, width: textWidth)
         Pace.end(span, detail: "\(bodyView.string.utf16.count)")
@@ -319,10 +320,10 @@ final class ColumnView: NSView {
             in: NSRect(x: 0, y: local.minY, width: bodyView.bounds.width, height: local.height))
         {
             let top = convert(NSPoint(x: 0, y: item.top), from: bodyView).y
-            let size = item.preview.size
-            let frame = NSRect(
-                x: (bodyView.frame.midX - size.width / 2).rounded(), y: top, width: size.width, height: size.height)
+            let frame = item.preview.frame(top: top, text: bodyView.frame)
             item.preview.draw(in: frame, placeholder: bodyView.mutedColor)
+            let captionFont = NSFont.systemFont(ofSize: (bodyView.baseFont?.pointSize ?? 15) * 0.8)
+            item.preview.drawCaption(under: frame, color: bodyView.mutedColor, font: captionFont)
             drawSelection(of: item.range, around: frame)
         }
     }

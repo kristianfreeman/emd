@@ -93,7 +93,8 @@ extension EmDashClient {
             slug: slug,
             label: object["label"]?.string ?? slug,
             labelSingular: object["labelSingular"]?.string ?? object["label"]?.string ?? slug,
-            fields: fields.sorted { $0.sortOrder < $1.sortOrder }
+            fields: fields.sorted { $0.sortOrder < $1.sortOrder },
+            supports: object["supports"]?.array?.compactMap(\.string) ?? ["drafts", "revisions"]
         )
     }
 

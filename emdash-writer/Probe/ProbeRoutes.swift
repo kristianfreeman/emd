@@ -7,7 +7,7 @@
     @MainActor
     final class ProbeRoutes {
         let model: AppModel
-        private var table: [String: (ProbeRequest) -> ProbeResponse] = [:]
+        private var table: [String: (ProbeRequest) async -> ProbeResponse] = [:]
 
         init(model: AppModel) {
             self.model = model
@@ -19,25 +19,27 @@
                 "GET /attributes": { self.attributes($0) },
                 "GET /render": { self.render($0) },
                 "GET /stats": { self.stats($0) },
+                "GET /api": { await self.api($0) },
                 "POST /open": { self.open($0) },
                 "POST /scratch": { self.scratch($0) },
                 "POST /scratch/close": { _ in self.closeScratch() },
                 "POST /select": { self.select($0) },
                 "POST /type": { self.type($0) },
                 "POST /command": { self.command($0) },
+                "POST /format": { self.format($0) },
                 "POST /focus": { self.focus($0) },
                 "POST /settings": { self.settings($0) },
                 "POST /replay": { self.replay($0) },
             ]
         }
 
-        func handle(_ request: ProbeRequest) -> ProbeResponse {
+        func handle(_ request: ProbeRequest) async -> ProbeResponse {
             guard let route = table["\(request.method) \(request.path)"] else {
                 return .json(
                     .object(["error": .string("No route \(request.method) \(request.path). GET / lists them.")]),
                     status: 404)
             }
-            return route(request)
+            return await route(request)
         }
 
         var view: QuietTextView? { model.editorView }

@@ -102,4 +102,17 @@
             return result == KERN_SUCCESS ? Double(info.phys_footprint) / 1_048_576 : 0
         }
     }
+    extension ProbeRoutes {
+        /// A GET against the site's API with the app's token: `?path=/schema/collections`. Read-only by design.
+        func api(_ request: ProbeRequest) async -> ProbeResponse {
+            guard let client = model.client, let path = request.query["path"], path.hasPrefix("/") else {
+                return Self.failure("Connect first, and send ?path=/…")
+            }
+            do {
+                return .json(try await client.send("GET", path))
+            } catch {
+                return Self.failure(error.localizedDescription)
+            }
+        }
+    }
 #endif

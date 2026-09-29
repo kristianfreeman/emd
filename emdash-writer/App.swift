@@ -21,6 +21,11 @@ struct EmDashWriterApp: App {
         Settings {
             SettingsView(model: model)
         }
+
+        Window("Emd Help", id: "help") {
+            HelpView()
+        }
+        .windowResizability(.contentSize)
     }
 }
 
@@ -31,7 +36,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         #if DEBUG
-            ProbeServer.shared.start(model: model)
+            // Not when the app is only hosting unit tests: that copy would take over probe.json and then quit.
+            if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
+                ProbeServer.shared.start(model: model)
+            }
         #endif
     }
 
@@ -84,6 +92,12 @@ struct WriterCommands: Commands {
             TextSizeCommands(model: model)
             Divider()
         }
+        CommandGroup(replacing: .help) {
+            HelpCommand()
+        }
+        CommandMenu("Format") {
+            FormatMenu(model: model)
+        }
         CommandMenu("Post") {
             PostMenu(model: model)
         }
@@ -105,12 +119,27 @@ private struct TextSizeCommands: View {
     }
 }
 
+private struct FormatMenu: View {
+    var model: AppModel
+
+    var body: some View {
+        Button("Bold") { model.editorView?.toggleMarker("**") }
+            .keyboardShortcut("b", modifiers: .command)
+        Button("Italic") { model.editorView?.toggleMarker("_") }
+            .keyboardShortcut("i", modifiers: .command)
+        Button("Code") { model.editorView?.toggleMarker("`") }
+        Divider()
+        Button("Link…") { model.editorView?.editLink() }
+            .keyboardShortcut("k", modifiers: .command)
+    }
+}
+
 private struct PostMenu: View {
     var model: AppModel
 
     var body: some View {
         if let document = model.document, document.loaded {
-            PostActions(model: model, state: PostState(document))
+            PostActions(model: model, state: model.postState(document))
         } else {
             Button("Publish") {}
                 .keyboardShortcut("p", modifiers: [.command, .shift])

@@ -156,7 +156,7 @@ private struct SiteCard: View {
         .confirmationDialog("Disconnect from \(host)?", isPresented: $confirmingDisconnect) {
             Button("Disconnect", role: .destructive) {
                 Task {
-                    await model.save()
+                    await model.saveUnlessLive()
                     model.disconnect()
                     token = ""
                 }

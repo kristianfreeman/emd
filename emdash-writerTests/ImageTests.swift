@@ -73,3 +73,36 @@ final class ImageTests: XCTestCase {
         XCTAssertEqual(passed.data, png)
     }
 }
+
+extension ImageTests {
+    func testCaptionAndAlignmentRideOnTheLine() {
+        let line = #"![Dog](/_emdash/api/media/file/01D.jpg =800x600 "A \"good\" dog"){wide}"#
+        let image = ImageLine(line)
+        XCTAssertEqual(image?.caption, #"A "good" dog"#)
+        XCTAssertEqual(image?.alignment, "wide")
+        XCTAssertEqual(image?.markdown, line)
+        let block = PortableText.fromMarkdown(line + "\n").first?.object
+        XCTAssertEqual(block?["caption"], .string(#"A "good" dog"#))
+        XCTAssertEqual(block?["alignment"], .string("wide"))
+        XCTAssertEqual(PortableText.toMarkdown(block.map { [.object($0)] } ?? []), line + "\n")
+    }
+
+    func testAdminImageWithCaptionIsALineNow() {
+        let block: [String: JSONValue] = [
+            "_type": .string("image"), "_key": .string("k"), "caption": .string("Night"),
+            "asset": .object(["_ref": .string("01HXK"), "url": .string("/_emdash/api/media/file/01HXK.jpg")]),
+            "width": .number(1920), "height": .number(1080), "alignment": .string("full"),
+        ]
+        XCTAssertEqual(
+            PortableText.toMarkdown([.object(block)]),
+            "![](/_emdash/api/media/file/01HXK.jpg =1920x1080 \"Night\"){full}\n")
+    }
+
+    func testUnknownImageFieldsStayFenced() {
+        let block: [String: JSONValue] = [
+            "_type": .string("image"), "_key": .string("k"), "blurhash": .string("L6PZfSi_.AyE"),
+            "asset": .object(["_ref": .string("01HXK"), "url": .string("/_emdash/api/media/file/01HXK.jpg")]),
+        ]
+        XCTAssertTrue(PortableText.toMarkdown([.object(block)]).hasPrefix("<!--ec:block"))
+    }
+}

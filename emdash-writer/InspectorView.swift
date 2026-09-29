@@ -22,6 +22,7 @@ struct GutterCopy: Equatable {
 
 struct PropertiesText: View {
     var copy: GutterCopy
+    var color: Color = .secondary
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -39,7 +40,7 @@ struct PropertiesText: View {
             }
         }
         .font(.callout)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(color)
         .multilineTextAlignment(.leading)
         .frame(width: 200, alignment: .topLeading)
         .padding(.trailing, 8)

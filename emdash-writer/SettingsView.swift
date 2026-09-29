@@ -11,9 +11,6 @@ struct SettingsView: View {
             WritingSettings(model: model)
                 .frame(width: 520, height: 520)
                 .tabItem { Label("Writing", systemImage: "textformat") }
-            LibrarySettings(model: model)
-                .frame(width: 520, height: 200)
-                .tabItem { Label("Library", systemImage: "books.vertical") }
         }
     }
 }
@@ -127,49 +124,5 @@ private struct FocusPreview: View {
 
     private var dimmed: Color {
         Color(nsColor: depth.ink(muted: palette.nsMuted, paper: palette.nsPaper))
-    }
-}
-
-private struct LibrarySettings: View {
-    var model: AppModel
-
-    var body: some View {
-        Form {
-            Section {
-                Picker("Collection", selection: collection) {
-                    if model.collections.isEmpty {
-                        Text("Posts").tag("posts")
-                    }
-                    ForEach(model.collections) { item in
-                        Text(item.label).tag(item.slug)
-                    }
-                }
-                .disabled(model.collections.isEmpty)
-            } footer: {
-                Text(note)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .formStyle(.grouped)
-    }
-
-    private var note: String {
-        let names = model.collections.map(\.label)
-        if names.isEmpty {
-            return "Connect a site to see its collections."
-        }
-        if model.collections.contains(where: { $0.slug == "posts" }) {
-            return "The sidebar lists this collection. Posts is the default."
-        }
-        return "This site has no Posts collection. Available: \(names.joined(separator: ", "))."
-    }
-
-    private var collection: Binding<String> {
-        Binding(
-            get: { model.collection?.slug ?? "posts" },
-            set: { slug in
-                Task { await model.chooseCollection(slug) }
-            }
-        )
     }
 }

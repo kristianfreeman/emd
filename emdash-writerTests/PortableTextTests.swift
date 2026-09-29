@@ -109,3 +109,21 @@ final class PortableTextTests: XCTestCase {
     }
 
 }
+
+extension PortableTextTests {
+    func testWordCountSkipsMarkup() {
+        let body = """
+            # A heading here
+            - one item
+            1. two items
+            Read [the docs](https://example.com/some_long_path) **now** — please.
+
+            ![](/_emdash/api/media/file/01A.png =10x10)
+
+            ```
+            let skipped = true
+            ```
+            """
+        XCTAssertEqual(WriterText.wordCount(title: "Title", body: body), 1 + 3 + 2 + 2 + 5)
+    }
+}

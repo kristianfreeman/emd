@@ -1,0 +1,66 @@
+#!/bin/zsh
+# Build Emd for other Macs: archive, sign with Developer ID, notarize, staple, and zip into dist/.
+#
+# One-time setup:
+#   1. A "Developer ID Application" certificate in the login keychain (Xcode › Settings › Accounts ›
+#      Manage Certificates › + › Developer ID Application).
+#   2. Notary credentials, stored once:
+#        xcrun notarytool store-credentials emd-notary --apple-id you@example.com --team-id 5SBY45UWAH
+#      (use an app-specific password from appleid.apple.com)
+#
+# Usage:
+#   scripts/release                  # full release
+#   scripts/release --skip-notarize  # archive and sign with the best identity available, no notarization
+set -euo pipefail
+
+root=$(cd "$(dirname "$0")/.." && pwd)
+cd "$root"
+profile="${NOTARY_PROFILE:-emd-notary}"
+team="5SBY45UWAH"
+skip_notarize=false
+[[ "${1:-}" == "--skip-notarize" ]] && skip_notarize=true
+
+identity=$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application:.*\)".*/\1/p' | head -1)
+if [[ -z "$identity" ]]; then
+  if ! $skip_notarize; then
+    echo "No Developer ID Application certificate in the keychain. See the setup notes at the top of this script." >&2
+    echo "To test the archive without notarizing: scripts/release --skip-notarize" >&2
+    exit 1
+  fi
+  identity=$(security find-identity -v -p codesigning | sed -n 's/.*"\(Apple Development:.*\)".*/\1/p' | head -1)
+  echo "No Developer ID; signing with $identity. This build only runs on Macs registered to the team." >&2
+fi
+
+version=$(sed -n 's/.*MARKETING_VERSION: "\(.*\)"/\1/p' project.yml)
+build="$root/build/release"
+rm -rf "$build"
+mkdir -p "$build" dist
+
+xcodegen generate >/dev/null
+echo "Archiving Emd $version…"
+xcodebuild archive \
+  -scheme EmDashWriter -configuration Release \
+  -archivePath "$build/Emd.xcarchive" \
+  CODE_SIGN_IDENTITY="$identity" DEVELOPMENT_TEAM="$team" CODE_SIGN_STYLE=Manual \
+  OTHER_CODE_SIGN_FLAGS="--timestamp" \
+  -quiet
+
+app="$build/Emd.xcarchive/Products/Applications/Emd.app"
+codesign --verify --deep --strict --verbose=1 "$app"
+codesign -dv "$app" 2>&1 | grep -E "Authority=|flags=|Timestamp=" | head -3
+
+zip="$root/dist/Emd-$version.zip"
+ditto -c -k --keepParent "$app" "$zip"
+
+if $skip_notarize; then
+  echo "Signed, not notarized: $zip"
+  exit 0
+fi
+
+echo "Notarizing (this can take a few minutes)…"
+xcrun notarytool submit "$zip" --keychain-profile "$profile" --wait
+xcrun stapler staple "$app"
+rm -f "$zip"
+ditto -c -k --keepParent "$app" "$zip"
+spctl --assess --type execute --verbose=2 "$app"
+echo "Ready to share: $zip"

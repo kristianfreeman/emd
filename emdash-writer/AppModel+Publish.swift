@@ -8,7 +8,7 @@ extension AppModel {
             return
         }
         notice = ""
-        let wasLive = PostState(document).isLive
+        let wasLive = postState(document).isLive
         guard await savedForPublish(document), let remoteID = document.remoteID, let client, let collection else {
             return
         }

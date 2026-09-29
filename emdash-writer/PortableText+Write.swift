@@ -102,42 +102,11 @@ extension PortableText {
         return false
     }
 
-    /// A picture line, when it reads back as this exact block. Captions, placeholders, and providers stay fenced.
+    /// A picture line, when it reads back as this exact block. Placeholders and providers stay fenced.
     private static func imageLine(_ block: [String: JSONValue]) -> String? {
-        guard plainImage(block), let url = plainURL(block["asset"]), let alt = plainAlt(block) else { return nil }
-        guard let size = plainSize(block) else { return nil }
-        let line = "![\(alt)](\(url)\(size))"
+        guard let image = ImageLine(block: block) else { return nil }
+        let line = image.markdown
         return roundTrips(block, as: line) ? line : nil
-    }
-
-    private static func plainImage(_ block: [String: JSONValue]) -> Bool {
-        let allowed: Set<String> = ["_type", "_key", "alt", "asset", "width", "height"]
-        return block.keys.allSatisfy(allowed.contains)
-    }
-
-    private static func plainURL(_ asset: JSONValue?) -> String? {
-        guard let object = asset?.object, Set(object.keys).isSubset(of: ["url", "_ref"]) else { return nil }
-        guard let url = object["url"]?.string, urlHolds(url) else { return nil }
-        return url
-    }
-
-    /// `" =1200x800"`, `""` without a size, or nil for a size a line cannot carry.
-    private static func plainSize(_ block: [String: JSONValue]) -> String? {
-        let width = block["width"]?.number
-        let height = block["height"]?.number
-        if width == nil && height == nil { return "" }
-        guard let width, let height, width == width.rounded(), height == height.rounded() else { return nil }
-        return " =\(Int(width))x\(Int(height))"
-    }
-
-    private static func urlHolds(_ url: String) -> Bool {
-        !url.isEmpty && !url.contains(")") && !url.contains("\n") && !url.contains(" ")
-    }
-
-    private static func plainAlt(_ block: [String: JSONValue]) -> String? {
-        guard let alt = block["alt"] else { return "" }
-        guard let text = alt.string, !text.contains("]"), !text.contains("\n") else { return nil }
-        return text
     }
 
     private static func appendOpaque(_ block: [String: JSONValue], index: Int, lines: inout [String]) -> Bool {

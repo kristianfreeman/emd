@@ -181,7 +181,7 @@ extension AppModel {
     }
 
     func chooseCollection(_ slug: String) async {
-        await save()
+        await saveUnlessLive()
         collectionSlug = slug
         defaults.set(slug, forKey: "collection")
         document = nil

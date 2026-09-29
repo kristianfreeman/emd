@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+"""Drive a running Debug build of Emd through its probe and check what a writer would notice.
+
+Every edit happens in a scratch post that never saves, so nothing reaches the site.
+Run it with Emd open: scripts/smoke
+"""
+
+import json
+import os
+import sys
+import time
+import urllib.request
+
+INFO = os.path.expanduser("~/Library/Application Support/EmDashWriter/probe.json")
+PICTURE = "![](/_emdash/api/media/file/01M3Q9RGRBX4B8Z3CA9F7FVBG5.png =2273x1515)"
+results = []
+
+
+def probe(method, path, body=None):
+    with open(INFO) as handle:
+        info = json.load(handle)
+    data = json.dumps(body).encode() if body is not None else None
+    request = urllib.request.Request(
+        f"http://127.0.0.1:{int(info['port'])}{path}", data=data, method=method,
+        headers={"X-Probe-Token": info["token"], "Content-Type": "application/json"})
+    with urllib.request.urlopen(request, timeout=60) as response:
+        return json.loads(response.read() or b"{}")
+
+
+def check(name, condition, detail=""):
+    results.append((name, bool(condition)))
+    mark = "ok  " if condition else "FAIL"
+    print(f"{mark} {name}" + (f"  ({detail})" if detail and not condition else ""))
+
+
+def scratch(text, at=None):
+    probe("POST", "/scratch", {"text": text})
+    time.sleep(0.6)
+    length = len(text.encode("utf-16-le")) // 2
+    probe("POST", "/select", {"location": length if at is None else at})
+
+
+def editor():
+    return probe("GET", "/editor")
+
+
+def lists():
+    scratch("Groceries:\n\n- apples")
+    probe("POST", "/command", {"name": "insertNewline"})
+    probe("POST", "/type", {"text": "pears"})
+    check("Return continues a list", editor()["text"].endswith("- apples\n- pears"), repr(editor()["text"]))
+    probe("POST", "/command", {"name": "insertNewline"})
+    probe("POST", "/command", {"name": "insertNewline"})
+    check("Return on an empty item ends it", editor()["text"].endswith("- pears\n"), repr(editor()["text"]))
+    check("Bullets are drawn", len(editor()["bullets"]) == 2, editor()["bullets"])
+    scratch("3. three")
+    probe("POST", "/command", {"name": "insertNewline"})
+    check("Numbered lists count up", editor()["text"].endswith("3. three\n4. "), repr(editor()["text"]))
+    scratch("- one\n- two")
+    probe("POST", "/command", {"name": "insertTab"})
+    check("Tab nests an item", editor()["text"] == "- one\n  - two", repr(editor()["text"]))
+
+
+def formatting():
+    scratch("make this bold")
+    probe("POST", "/select", {"location": 5, "length": 4})
+    probe("POST", "/format", {"style": "bold"})
+    check("Bold wraps the selection", editor()["text"] == "make **this** bold", repr(editor()["text"]))
+    probe("POST", "/format", {"style": "bold"})
+    check("Bold again unwraps it", editor()["text"] == "make this bold", repr(editor()["text"]))
+
+
+def links():
+    scratch("See [docs](https://example.com) now.", at=9)
+    probe("POST", "/command", {"name": "moveRight"})
+    check("Right steps over a link's hidden address", editor()["selection"]["location"] == 32, editor()["selection"])
+    check("A link's address stays hidden", editor()["hidden"] >= 23, editor()["hidden"])
+    probe("POST", "/select", {"location": 31})
+    probe("POST", "/command", {"name": "moveLeft"})
+    check("Left from after a link goes into its label", editor()["selection"]["location"] == 8, editor()["selection"])
+    probe("POST", "/select", {"location": 0})
+    stops = [probe("POST", "/command", {"name": "moveWordRight"})["selection"]["location"] for _ in range(3)]
+    check("Word moves step over a link", stops == [3, 9, 35], stops)
+    probe("POST", "/select", {"location": 36})
+    stops = [probe("POST", "/command", {"name": "moveWordLeft"})["selection"]["location"] for _ in range(3)]
+    check("Word moves back never stop in its address", stops == [32, 5, 0], stops)
+
+
+def headings():
+    scratch("# Hi")
+    before = font(probe("GET", "/attributes?at=2").get("NSFont", ""))
+    probe("POST", "/type", {"text": "there"})
+    after = font(probe("GET", "/attributes?at=2").get("NSFont", ""))
+    check("A heading keeps its size while typing", before == after, f"{before} -> {after}")
+
+
+def font(description):
+    """Name and size from an NSFont description, without the object address."""
+    return " ".join(description.split(" ")[:3])
+
+
+def pictures():
+    text = "Before.\n\n" + PICTURE + "\n\nAfter."
+    start = len("Before.\n\n")
+    scratch(text, at=start + 5)
+    state = editor()
+    check("A picture is laid out", len(state["pictures"]) == 1, state["pictures"])
+    check("Landing in a picture selects it", state["selection"]["location"] == start, state["selection"])
+    probe("POST", "/command", {"name": "moveRight"})
+    after = start + len(PICTURE) + 2
+    check("The next move goes past it and its blank line", editor()["selection"]["location"] == after,
+          editor()["selection"])
+    probe("POST", "/select", {"location": len("Before.")})
+    probe("POST", "/command", {"name": "moveDown"})
+    check("Down from the paragraph above selects it", editor()["selection"]["location"] == start, editor()["selection"])
+    probe("POST", "/command", {"name": "moveDown"})
+    check("Down again lands in the paragraph below", editor()["selection"]["location"] >= after, editor()["selection"])
+    probe("POST", "/command", {"name": "moveUp"})
+    check("Up selects it again", editor()["selection"]["location"] == start, editor()["selection"])
+    probe("POST", "/command", {"name": "moveUp"})
+    check("Up again lands in the paragraph above", editor()["selection"]["location"] < start - 1, editor()["selection"])
+    probe("POST", "/select", {"location": start})
+    probe("POST", "/command", {"name": "deleteBackward"})
+    check("Delete removes the picture", editor()["text"] == "Before.\n\nAfter.", repr(editor()["text"]))
+
+
+def focus_and_search():
+    probe("POST", "/focus", {"target": "search"})
+    time.sleep(0.5)
+    responder = probe("GET", "/state")["firstResponder"]
+    check("Search Posts takes the keyboard", "Search" in responder, responder)
+    probe("POST", "/focus", {"target": "editor"})
+    time.sleep(0.5)
+    responder = probe("GET", "/state")["firstResponder"]
+    check("Return to the post takes the keyboard", responder == "QuietTextView", responder)
+
+
+def settings():
+    was = probe("GET", "/state")["view"]
+    changed = probe("POST", "/settings", {"focusMode": not was["focusMode"], "focusDepth": 3})["view"]
+    check("Settings apply", changed["focusMode"] != was["focusMode"] and changed["focusDepth"] == 3, changed)
+    back = probe("POST", "/settings", {"focusMode": was["focusMode"], "focusDepth": was["focusDepth"]})["view"]
+    check("Settings restore", back["focusMode"] == was["focusMode"] and back["focusDepth"] == was["focusDepth"], back)
+
+
+def typing_speed():
+    line = "Say **hi** and *there* to [the site](https://example.com), with more words to wrap the line.\n"
+    for at in (60000, 119000, 100):
+        replay = probe("POST", "/replay", {"seed": (line * 1300)[:120000], "at": at})["keystroke"]
+        # One keystroke per burst may pay TextKit's re-layout of everything below when a line first wraps:
+        # about 110ms at the top of 120,000 characters. Every other key must stay near a millisecond.
+        check(f"Typing at {at} of 120,000 stays under 10ms", replay["p95"] < 10 and replay["max"] < 150,
+              f"p95 {replay['p95']:.1f}ms, max {replay['max']:.1f}ms")
+
+
+def main():
+    if not os.path.exists(INFO):
+        sys.exit("No probe.json. Open a Debug build of Emd first.")
+    with open(INFO) as handle:
+        pid = int(json.load(handle)["pid"])
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        sys.exit(f"probe.json is from an Emd that is no longer running (pid {pid}). Open the Debug build.")
+    state = probe("GET", "/state")
+    check("The app is connected", state["connected"], state.get("notice"))
+    try:
+        for step in (lists, formatting, links, headings, pictures, focus_and_search, settings, typing_speed):
+            step()
+    finally:
+        probe("POST", "/scratch/close")
+    failed = [name for name, passed in results if not passed]
+    print(f"\n{len(results) - len(failed)} of {len(results)} passed")
+    sys.exit(1 if failed else 0)
+
+
+if __name__ == "__main__":
+    main()

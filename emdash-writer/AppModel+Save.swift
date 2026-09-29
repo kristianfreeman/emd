@@ -29,8 +29,15 @@ extension AppModel {
         }
         guard let document, document.dirty else { return false }
         journal(document)
+        // Without revisions this save would be the live post. It waits for Update, safe in the journal.
+        guard !postState(document).writesLive else { return false }
         await enqueueSave(publishIfLive: false, skipRevision: true)
-        guard self.document?.dirty == true else {
+        return scheduleRetry()
+    }
+
+    /// Whether to keep going after a save: yes while text is still unsent and the failure can pass.
+    private func scheduleRetry() -> Bool {
+        guard document?.dirty == true else {
             saveFailures = 0
             return false
         }
@@ -45,6 +52,16 @@ extension AppModel {
     private func retryable(_ error: Error?) -> Bool {
         if let api = error as? APIError { return api.status >= 500 || api.status == 429 }
         return error is URLError
+    }
+
+    func postState(_ document: EditorDocument) -> PostState {
+        PostState(document, keepsRevisions: collection?.keepsRevisions ?? true)
+    }
+
+    /// Saves before leaving the post, unless that would change a live post by itself. Then it journals.
+    func saveUnlessLive() async {
+        guard let document, postState(document).writesLive else { return await save() }
+        journal(document)
     }
 
     func save() async {

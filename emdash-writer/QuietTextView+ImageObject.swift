@@ -2,7 +2,7 @@ import AppKit
 
 /// A picture is one object in the text. The caret stops on it once, as a selection ring, and the next
 /// move goes past it. A selection that touches it takes all of it. Delete removes it; Return or typing
-/// starts a paragraph after it. A double-click opens its Markdown, which folds again once the caret leaves.
+/// starts a paragraph after it. A double-click opens its details; its Markdown folds again once the caret leaves.
 extension QuietTextView {
     /// The folded Markdown of the picture at or just before `index`.
     func imageContent(around index: Int) -> NSRange? {
@@ -52,11 +52,10 @@ extension QuietTextView {
 
     private func snapped(_ range: NSRange, from old: NSRange) -> NSRange {
         guard range.length == 0 else { return widened(range) }
-        guard let image = imageContent(around: range.location), range.location != image.location else { return range }
-        // One step on from a selected picture goes past it; anything else landing in it selects it.
-        let leaving = old.length == 0 && old.location == image.location && range.location > image.location
-        let past = min(NSMaxRange(image) + 1, textStorage?.length ?? 0)
-        return NSRange(location: leaving ? past : image.location, length: 0)
+        if let block = pictureBlock(around: range.location) {
+            return NSRange(location: snappedToPicture(range.location, block: block, from: old), length: 0)
+        }
+        return NSRange(location: snappedPastLinkMarkup(range.location, from: old), length: 0)
     }
 
     private func widened(_ range: NSRange) -> NSRange {
@@ -66,12 +65,18 @@ extension QuietTextView {
     // MARK: Keys on a selected picture
 
     override func deleteBackward(_ sender: Any?) {
-        guard let image = selectedImage else { return super.deleteBackward(sender) }
+        guard let image = selectedImage else {
+            caretPastLinkMarkup(forward: false)
+            return super.deleteBackward(sender)
+        }
         removeImage(image)
     }
 
     override func deleteForward(_ sender: Any?) {
-        guard let image = selectedImage else { return super.deleteForward(sender) }
+        guard let image = selectedImage else {
+            caretPastLinkMarkup(forward: true)
+            return super.deleteForward(sender)
+        }
         removeImage(image)
     }
 
@@ -118,11 +123,19 @@ extension QuietTextView {
 
     // MARK: Opening the Markdown
 
+    /// A double-click on a picture opens its details. Edit Markdown there opens the line itself.
     override func mouseDown(with event: NSEvent) {
         let index = characterIndexForInsertion(at: convert(event.locationInWindow, from: nil))
         guard event.clickCount == 2, let image = imageContent(around: index) else {
             return super.mouseDown(with: event)
         }
+        super.setSelectedRanges(
+            [NSValue(range: NSRange(location: image.location, length: 0))], affinity: .downstream, stillSelecting: false
+        )
+        showImageDetails(image)
+    }
+
+    func revealImage(_ image: NSRange) {
         revealedImage = image.location
         restyle(around: image)
         super.setSelectedRanges(

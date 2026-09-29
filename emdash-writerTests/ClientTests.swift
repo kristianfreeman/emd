@@ -258,3 +258,23 @@ final class MockURLProtocol: URLProtocol {
 
     override func stopLoading() {}
 }
+
+extension ClientTests {
+    @MainActor
+    func testCollectionsWithoutRevisionsNeverAutosaveLivePosts() throws {
+        let plain = try XCTUnwrap(
+            EmDashClient.collection(from: .object(["slug": .string("notes"), "supports": .array([.string("drafts")])])))
+        XCTAssertFalse(plain.keepsRevisions)
+        let defaults = try XCTUnwrap(EmDashClient.collection(from: .object(["slug": .string("posts")])))
+        XCTAssertTrue(defaults.keepsRevisions)
+
+        let live = EditorDocument()
+        live.status = "published"
+        live.body = "edited"
+        let state = PostState(live, keepsRevisions: false)
+        XCTAssertTrue(state.writesLive)
+        XCTAssertEqual(state.publishTitle, "Update Live Post")
+        XCTAssertEqual(state.label, "Published, edits not live yet")
+        XCTAssertFalse(PostState(live).writesLive)
+    }
+}

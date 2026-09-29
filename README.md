@@ -22,7 +22,7 @@ xcodebuild -scheme EmDashWriter -destination 'platform=macOS' test
 open EmDashWriter.xcodeproj
 ```
 
-Debug and Release sign with the Apple Development identity in `project.yml`, so a build runs on this Mac. Release turns on the hardened runtime and a secure timestamp. Shipping to other Macs also needs a Developer ID Application certificate and notarization (`xcodebuild archive`, then `notarytool submit` and `stapler staple`).
+Debug and Release sign with the Apple Development identity in `project.yml`, so a build runs on this Mac. Release turns on the hardened runtime and a secure timestamp. Shipping to other Macs needs a Developer ID Application certificate and notarization: `scripts/release` archives, signs, notarizes, staples, and zips into `dist/` (setup notes are at the top of the script; `--skip-notarize` builds a signed zip without them).
 
 ## Probe
 
@@ -43,5 +43,7 @@ scripts/probe POST /command '{"name": "moveDown", "count": 2}'
 scripts/probe POST /settings '{"focusMode": true, "focusDepth": 3}'
 scripts/probe POST /replay '{"typed": "abc", "at": 60000}'  # timed typing in an offscreen copy
 ```
+
+`scripts/smoke` runs the checks a writer would notice against the running Debug app — lists, headings, pictures, focus and search, settings, and typing speed on a 120,000-character post — all in scratch posts.
 
 Typing into a real post autosaves it like any edit, so experiments belong in `/scratch`. Publishing, unpublishing, discarding, and trashing are not on the probe.

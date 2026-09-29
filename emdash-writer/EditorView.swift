@@ -19,7 +19,7 @@ struct EditorView: View {
     private var subtitle: String {
         if !model.flashText.isEmpty { return model.flashText }
         guard let document = model.document, document.loaded else { return model.offline ? "Offline" : "" }
-        let state = PostState(document)
+        let state = model.postState(document)
         let parts = [siteName, model.offline ? "Offline" : state.label, state.words]
         return parts.joined(separator: " · ")
     }
@@ -130,7 +130,7 @@ private struct EditorToolbar: ToolbarContent {
                 }
                 .help("Insert Image… (⇧⌘I). You can also drop or paste images into the text.")
                 .disabled(model.client == nil)
-                PublishButton(model: model, state: PostState(document))
+                PublishButton(model: model, state: model.postState(document))
             }
         }
     }

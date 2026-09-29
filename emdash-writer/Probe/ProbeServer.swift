@@ -59,7 +59,7 @@
                 var data = buffer
                 data.append(chunk ?? Data())
                 if let request = ProbeRequest(data) {
-                    Task { @MainActor in self?.answer(request, on: connection) }
+                    Task { @MainActor in await self?.answer(request, on: connection) }
                 } else if done || error != nil {
                     connection.cancel()
                 } else {
@@ -68,12 +68,12 @@
             }
         }
 
-        private func answer(_ request: ProbeRequest, on connection: NWConnection) {
+        private func answer(_ request: ProbeRequest, on connection: NWConnection) async {
             let response: ProbeResponse
             if request.headers["x-probe-token"] != token {
                 response = .json(.object(["error": .string("Missing or wrong X-Probe-Token.")]), status: 401)
             } else {
-                response = routes?.handle(request) ?? .json(.object([:]), status: 503)
+                response = await routes?.handle(request) ?? .json(.object([:]), status: 503)
             }
             connection.send(content: response.encoded(), completion: .contentProcessed { _ in connection.cancel() })
         }

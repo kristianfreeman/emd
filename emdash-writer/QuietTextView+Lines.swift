@@ -99,7 +99,8 @@ extension QuietTextView {
     }
 
     func hideMarkers(_ run: MarkdownRun, on line: NSRange, inner: NSRange, style: inout LineStyle) {
-        let show = markerShown(inner, markers: run.markers, line: line)
+        // A link keeps its Markdown hidden; ⌘K edits the address. Other markers show while the caret touches them.
+        let show = run.kind != .link && markerShown(inner, markers: run.markers, line: line)
         for marker in run.markers {
             noteMarkers(offset(marker, by: line.location), editing: show, style: &style)
         }

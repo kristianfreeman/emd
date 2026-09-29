@@ -5,11 +5,41 @@ final class InlinePreview: NSObject {
     let url: URL
     let size: NSSize
     let dimmed: Bool
+    var caption = ""
+    var alignment = ""
+
+    static let captionHeight: CGFloat = 26
 
     init(url: URL, size: NSSize, dimmed: Bool) {
         self.url = url
         self.size = size
         self.dimmed = dimmed
+    }
+
+    /// Height the line makes room for: the picture, its gaps, and a caption when there is one.
+    var room: CGFloat {
+        size.height + QuietTextView.imageGap * 2 + (caption.isEmpty ? 0 : Self.captionHeight)
+    }
+
+    /// Where the picture sits across the column: centered, or against the text's left or right edge.
+    func frame(top: CGFloat, text: NSRect) -> NSRect {
+        let x: CGFloat
+        switch alignment {
+        case "left": x = text.minX + 5
+        case "right": x = text.maxX - 5 - size.width
+        default: x = text.midX - size.width / 2
+        }
+        return NSRect(x: x.rounded(), y: top, width: size.width, height: size.height)
+    }
+
+    func drawCaption(under frame: NSRect, color: NSColor, font: NSFont) {
+        guard !caption.isEmpty else { return }
+        let style = NSMutableParagraphStyle()
+        style.alignment = alignment == "left" ? .left : alignment == "right" ? .right : .center
+        style.lineBreakMode = .byTruncatingTail
+        let box = NSRect(x: frame.minX, y: frame.maxY + 6, width: frame.width, height: Self.captionHeight - 6)
+        (caption as NSString).draw(
+            in: box, withAttributes: [.font: font, .foregroundColor: color, .paragraphStyle: style])
     }
 
     func draw(in frame: NSRect, placeholder: NSColor) {
@@ -45,8 +75,6 @@ extension NSAttributedString.Key {
 /// centered and wider than the text, from `previews(in:)`.
 extension QuietTextView {
     static let imageGap: CGFloat = 10
-    private static let imageLine = try? NSRegularExpression(
-        pattern: #"^!\[[^\]]*\]\(([^)\s]+)(?:\s+=(\d+)x(\d+))?\)$"#)
 
     /// Styles `context.line` as a picture when it is one whose size is known. The size comes from the
     /// `=WxH` suffix, or from the image once it has loaded; until then the line reads as text.
@@ -54,9 +82,15 @@ extension QuietTextView {
         let content = strippedNewline(context.line, ns: context.ns)
         guard let picture = pictureLine(context.ns.substring(with: content)) else { return false }
         InlineImages.shared.request(picture.url)
-        let size = previewSize(picture.declared ?? InlineImages.shared.pixelSize(picture.url))
+        let declared = picture.image.width.flatMap { width in
+            picture.image.height.map { NSSize(width: width, height: $0) }
+        }
+        let size = previewSize(
+            declared ?? InlineImages.shared.pixelSize(picture.url), alignment: picture.image.alignment)
         guard size.height > 0 else { return false }
         let preview = InlinePreview(url: picture.url, size: size, dimmed: focusMode && !context.editing)
+        preview.caption = picture.image.caption
+        preview.alignment = picture.image.alignment
         let open = revealedImage == content.location
         style.storage.addAttribute(.inlineImage, value: preview, range: content)
         style.storage.addAttribute(
@@ -91,20 +125,9 @@ extension QuietTextView {
         (paragraph.mutableCopy() as? NSMutableParagraphStyle) ?? NSMutableParagraphStyle()
     }
 
-    private func pictureLine(_ text: String) -> (url: URL, declared: NSSize?)? {
-        let ns = text as NSString
-        guard let match = Self.imageLine?.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)) else {
-            return nil
-        }
-        guard let url = resolved(ns.substring(with: match.range(at: 1))) else { return nil }
-        return (url, declaredSize(match, ns: ns))
-    }
-
-    private func declaredSize(_ match: NSTextCheckingResult, ns: NSString) -> NSSize? {
-        guard match.range(at: 2).location != NSNotFound, match.range(at: 3).location != NSNotFound else { return nil }
-        let width = Double(ns.substring(with: match.range(at: 2))) ?? 0
-        let height = Double(ns.substring(with: match.range(at: 3))) ?? 0
-        return NSSize(width: width, height: height)
+    private func pictureLine(_ text: String) -> (image: ImageLine, url: URL)? {
+        guard let image = ImageLine(text), let url = resolved(image.url) else { return nil }
+        return (image, url)
     }
 
     /// Site media URLs are relative to the site.
@@ -115,13 +138,24 @@ extension QuietTextView {
     }
 
     /// Pixels are drawn at 2x, up to the width the column allows pictures, which is wider than the text.
-    private func previewSize(_ pixels: NSSize?) -> NSSize {
+    /// Pixels draw at 2x. The width allowed follows EmDash's alignment: half the text for left and right,
+    /// the text for center, past the text for wide and the default, the window for full.
+    private func previewSize(_ pixels: NSSize?, alignment: String) -> NSSize {
         guard let pixels, pixels.width > 0, pixels.height > 0 else { return .zero }
         let text = (textContainer?.size.width ?? 0) - (textContainer?.lineFragmentPadding ?? 0) * 2
-        let limit = max(imageWidthLimit, text)
+        let limit = widthLimit(alignment, text: text)
         guard limit > 40 else { return .zero }
         let width = min(limit, pixels.width / 2).rounded()
         return NSSize(width: width, height: (width * pixels.height / pixels.width).rounded())
+    }
+
+    private func widthLimit(_ alignment: String, text: CGFloat) -> CGFloat {
+        switch alignment {
+        case "left", "right": text / 2
+        case "center": text
+        case "full": max(imageFullWidth, text)
+        default: max(imageWidthLimit, text)
+        }
     }
 
     // MARK: Drawing
@@ -156,7 +190,7 @@ extension QuietTextView {
             let preview = previewStarting(
                 layoutManager.characterRange(forGlyphRange: glyphRange, actualGlyphRange: nil))
         else { return false }
-        let room = preview.size.height + Self.imageGap * 2
+        let room = preview.room
         lineFragmentRect.pointee.size.height += room
         lineFragmentUsedRect.pointee.size.height += room
         baselineOffset.pointee += room
