@@ -57,3 +57,25 @@ extension FormatTests {
         XCTAssertNil(QuietTextView.webAddress("mailto:someone@example.com"))
     }
 }
+
+extension FormatTests {
+    func testLinkingAndUnlinking() {
+        let view = editor("read the docs", selection: NSRange(location: 5, length: 8))
+        view.applyLink(" https://example.com/(a) ", to: nil, selection: view.selectedRange())
+        XCTAssertEqual(view.string, "read [the docs](https://example.com/(a%29)")
+        let found = view.linkAround(NSRange(location: 8, length: 0))
+        XCTAssertEqual(found?.address, "https://example.com/(a%29")
+        view.applyLink("https://other.example", to: found, selection: NSRange(location: 8, length: 0))
+        XCTAssertEqual(view.string, "read [the docs](https://other.example)")
+        view.unlink(view.linkAround(NSRange(location: 8, length: 0)))
+        XCTAssertEqual(view.string, "read the docs")
+        XCTAssertEqual(view.selectedRange(), NSRange(location: 5, length: 8))
+    }
+
+    func testANewLinkWithNothingSelectedSelectsItsLabel() {
+        let view = editor("see ", selection: NSRange(location: 4, length: 0))
+        view.applyLink("https://example.com", to: nil, selection: view.selectedRange())
+        XCTAssertEqual(view.string, "see [link](https://example.com)")
+        XCTAssertEqual(view.selectedRange(), NSRange(location: 5, length: 4))
+    }
+}

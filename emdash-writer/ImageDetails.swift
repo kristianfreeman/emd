@@ -10,6 +10,7 @@ struct ImageDetails: View {
     @State private var alt: String
     @State private var caption: String
     @State private var alignment: String
+    @FocusState private var altFocused: Bool
 
     init(
         _ image: ImageLine, apply: @escaping (ImageLine) -> Void, editMarkdown: @escaping () -> Void,
@@ -28,6 +29,7 @@ struct ImageDetails: View {
         VStack(alignment: .leading, spacing: 14) {
             Form {
                 TextField("Alt text", text: $alt, prompt: Text("Describe the picture"))
+                    .focused($altFocused)
                 TextField("Caption", text: $caption, prompt: Text("None"))
                 Picker("Alignment", selection: $alignment) {
                     Text("Default").tag("")
@@ -45,6 +47,7 @@ struct ImageDetails: View {
         }
         .padding(16)
         .frame(width: 380)
+        .onAppear { altFocused = true }
     }
 
     private func done() {
@@ -62,6 +65,7 @@ struct LinkEditor: View {
     let apply: (String) -> Void
     let remove: () -> Void
     @State private var address: String
+    @FocusState private var focused: Bool
 
     init(address: String, existing: Bool, apply: @escaping (String) -> Void, remove: @escaping () -> Void) {
         self.existing = existing
@@ -74,7 +78,11 @@ struct LinkEditor: View {
         VStack(alignment: .leading, spacing: 12) {
             TextField("Address", text: $address, prompt: Text("https://…"))
                 .textFieldStyle(.roundedBorder)
-                .onSubmit { apply(address) }
+                .focused($focused)
+                .onSubmit {
+                    guard !address.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+                    apply(address)
+                }
             HStack {
                 if existing {
                     Button("Remove Link", role: .destructive, action: remove)
@@ -87,5 +95,6 @@ struct LinkEditor: View {
         }
         .padding(14)
         .frame(width: 340)
+        .onAppear { focused = true }
     }
 }

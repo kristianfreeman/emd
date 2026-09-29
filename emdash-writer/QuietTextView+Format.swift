@@ -75,19 +75,21 @@ extension QuietTextView {
         present(editor, at: firstRect(for: found?.whole ?? selection))
     }
 
-    private func applyLink(
-        _ address: String, to found: FoundLink?, selection: NSRange
-    ) {
+    /// Links the selection, or rewrites the address of the link under it. With nothing selected the label is
+    /// `link`, selected, so the next keystrokes replace it.
+    func applyLink(_ address: String, to found: FoundLink?, selection: NSRange) {
         closePopover()
         let clean = address.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: ")", with: "%29")
         let range = found?.whole ?? selection
-        let label = found?.label ?? ((string as NSString).substring(with: selection).nonEmpty ?? "link")
+        let typed = (string as NSString).substring(with: selection)
+        let label = found?.label ?? (typed.isEmpty ? "link" : typed)
         let text = "[\(label)](\(clean))"
-        replaceRange(
-            range, with: text, select: NSRange(location: range.location + (text as NSString).length, length: 0))
+        let after = NSRange(location: range.location + (text as NSString).length, length: 0)
+        let placeholder = NSRange(location: range.location + 1, length: (label as NSString).length)
+        replaceRange(range, with: text, select: found == nil && typed.isEmpty ? placeholder : after)
     }
 
-    private func unlink(_ found: FoundLink?) {
+    func unlink(_ found: FoundLink?) {
         closePopover()
         guard let found else { return }
         replaceRange(
