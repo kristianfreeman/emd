@@ -58,6 +58,16 @@ enum LocalStore {
         try? data.write(to: url, options: .atomic)
     }
 
+    /// Every post with journaled text, by id.
+    static func pendingIDs(site: String) -> Set<String> {
+        guard let root = directory(site: site) else { return [] }
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: root.path)) ?? []
+        return Set(
+            names.filter { $0.hasPrefix("pending-") && $0.hasSuffix(".json") }.map {
+                String($0.dropFirst("pending-".count).dropLast(".json".count))
+            })
+    }
+
     /// Drafts the site never saw, by local id.
     static func pendingDrafts(site: String) -> [(id: String, text: DraftText)] {
         guard let root = directory(site: site) else { return [] }

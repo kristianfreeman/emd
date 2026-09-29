@@ -138,6 +138,7 @@ extension AppModel {
         defaults.set(siteTitle, forKey: "siteTitle")
         keepCollection(session.collections)
         restoreJournaledDrafts()
+        loadUnsent()
     }
 
     private func titled(_ settings: SiteSettings, host: String?) -> String {

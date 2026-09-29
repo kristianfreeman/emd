@@ -177,6 +177,7 @@ struct RootView: View {
         }
         .preferredColorScheme(model.appearance.colorScheme)
         .task {
+            model.loadUnsent()
             model.reopenLast()
             await model.restore()
         }

@@ -47,6 +47,8 @@ final class AppModel {
     var confirmTrash = false
     var confirmReload = false
     var showingDetails = false
+    /// Posts whose text is journaled here and not yet on the site. The sidebar marks them.
+    var unsentIDs: Set<String> = []
     var confirmDiscard = false
     var discardID: String?
     /// A short confirmation, like "Published", shown in the subtitle for a few seconds.

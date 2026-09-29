@@ -75,7 +75,7 @@ struct LibraryView: View {
                     if !focused && renamingID != nil { finishRename() }
                 }
         } else {
-            LibraryRow(entry: entry)
+            LibraryRow(entry: entry, unsent: model.unsentIDs.contains(entry.id) && model.document?.id != entry.id)
         }
     }
 
@@ -104,11 +104,22 @@ struct LibraryView: View {
 
 private struct LibraryRow: View {
     var entry: ContentSummary
+    /// Edits kept on this Mac that have not reached the site yet.
+    var unsent = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(entry.title)
-                .lineLimit(1)
+            HStack(spacing: 5) {
+                if unsent {
+                    Circle()
+                        .fill(.tint)
+                        .frame(width: 6, height: 6)
+                        .help("Edits on this Mac that have not reached the site yet")
+                        .accessibilityLabel("Unsaved edits")
+                }
+                Text(entry.title)
+                    .lineLimit(1)
+            }
             Text(status)
                 .font(.caption)
                 .foregroundStyle(.secondary)

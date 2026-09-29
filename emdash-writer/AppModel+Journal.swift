@@ -6,14 +6,22 @@ extension AppModel {
     func journal(_ document: EditorDocument) {
         guard document.dirty, !document.neverSaves, let site = siteURL?.host else { return }
         LocalStore.storePending(site: site, id: document.id, text: document.text)
+        if !unsentIDs.contains(document.id) { unsentIDs.insert(document.id) }
+    }
+
+    func loadUnsent() {
+        guard let site = siteURL?.host else { return }
+        unsentIDs = LocalStore.pendingIDs(site: site)
     }
 
     /// A new post journals under its local id until the site gives it one, so both are cleared.
     func clearJournal(_ document: EditorDocument) {
         guard let site = siteURL?.host else { return }
         LocalStore.clearPending(site: site, id: document.localID)
+        unsentIDs.remove(document.localID)
         guard let remoteID = document.remoteID else { return }
         LocalStore.clearPending(site: site, id: remoteID)
+        unsentIDs.remove(remoteID)
     }
 
     /// New posts that never reached the site come back as drafts.
@@ -34,6 +42,7 @@ extension AppModel {
         guard let pending = LocalStore.pending(site: site, id: remoteID) else { return }
         guard pending != document.text else {
             LocalStore.clearPending(site: site, id: remoteID)
+            unsentIDs.remove(remoteID)
             return
         }
         document.restore(pending)

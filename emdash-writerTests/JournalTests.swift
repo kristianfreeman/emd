@@ -39,8 +39,10 @@ final class JournalTests: XCTestCase {
         document.apply(entry(body: "Saved."))
         document.body = "Saved, then edited."
         model.journal(document)
+        XCTAssertTrue(model.unsentIDs.contains("post-1"))
         model.clearJournal(document)
         XCTAssertNil(LocalStore.pending(site: site, id: "post-1"))
+        XCTAssertFalse(model.unsentIDs.contains("post-1"))
     }
 
     func testNewPostsThatNeverReachedTheSiteComeBackAsDrafts() {
