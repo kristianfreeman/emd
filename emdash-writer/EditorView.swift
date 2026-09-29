@@ -265,7 +265,9 @@ struct PostActions: View {
                 .disabled(model.busy)
         } else {
             Button("Schedule…") { model.showingSchedule = true }
-                .disabled(state.document.status == "published" && !state.hasUnpublishedChanges || model.busy)
+                .disabled(
+                    state.document.status == "published" && !state.hasUnpublishedChanges || state.writesLive
+                        || model.busy)
         }
         Button("Unpublish") { Task { await model.unpublish() } }
             .disabled(!state.isLive || model.busy)

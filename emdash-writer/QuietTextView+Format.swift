@@ -66,6 +66,9 @@ extension QuietTextView {
     /// ⌘K: edits the link under the caret, or links the selection. A copied URL fills the address.
     func editLink() {
         let selection = selectedRange()
+        let words = (string as NSString).substring(with: selection)
+        // A link is one run of words: not across paragraphs, and not half over another link.
+        guard !words.contains(where: { "\n[]".contains($0) }) else { return NSSound.beep() }
         let found = linkAround(selection)
         let clipboard = NSPasteboard.general.string(forType: .string).flatMap { $0.hasPrefix("http") ? $0 : nil }
         let editor = LinkEditor(
@@ -105,7 +108,7 @@ extension QuietTextView {
             return false
         }
         let words = (string as NSString).substring(with: selection)
-        guard !words.contains("\n"), !words.contains("]("), linkAround(selection) == nil else { return false }
+        guard !words.contains(where: { "\n[]".contains($0) }), linkAround(selection) == nil else { return false }
         let text = "[\(words)](\(address))"
         replaceRange(
             selection, with: text, select: NSRange(location: selection.location + (text as NSString).length, length: 0))

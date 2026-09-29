@@ -12,9 +12,9 @@ struct PostState {
         self.keepsRevisions = keepsRevisions
     }
 
-    /// Saving this post would change what readers see right now.
+    /// Saving this post would change what readers see right now. A scheduled post is not live yet.
     var writesLive: Bool {
-        isLive && !keepsRevisions
+        document.status == "published" && !keepsRevisions
     }
 
     var isLive: Bool {
@@ -30,7 +30,9 @@ struct PostState {
         isLive && document.draftRevisionID != nil
     }
 
+    /// A scheduled post has no publish-now button: its edits save to the draft the schedule will publish.
     var canPublish: Bool {
+        guard document.status != "scheduled" else { return false }
         guard document.remoteID != nil || document.words > 0 || !document.title.isEmpty else { return false }
         return !isLive || hasUnpublishedChanges
     }

@@ -40,6 +40,7 @@ extension AppModel {
     func unschedule() async {
         guard let document, let remoteID = document.remoteID, let client, let collection else { return }
         notice = ""
+        await saveChain?.value
         let done = await transition(document) { try await client.unschedule(collection: collection, id: remoteID) }
         if done { flash("No longer scheduled") }
     }

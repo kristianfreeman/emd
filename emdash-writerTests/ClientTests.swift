@@ -327,3 +327,15 @@ extension ClientTests {
         XCTAssertTrue(state.label.contains("2030"), state.label)
     }
 }
+
+extension ClientTests {
+    @MainActor
+    func testEditingAScheduledPostNeverPublishesItNow() {
+        let document = EditorDocument()
+        document.status = "scheduled"
+        document.scheduledAt = "2030-06-15T09:00:00Z"
+        document.body = "edited"
+        XCTAssertFalse(PostState(document).canPublish)
+        XCTAssertFalse(PostState(document, keepsRevisions: false).writesLive, "not live until the schedule runs")
+    }
+}
