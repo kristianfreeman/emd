@@ -4,7 +4,13 @@ A native Mac app for writing on an [EmDash](https://emdashcms.com/) site. It is 
 
 Connect with the site address and a personal access token from the EmDash admin (Settings → API tokens). The token needs to read and write content. It is stored in the Keychain. The app then loads the site name, collections, and posts through `/_emdash/api/`.
 
-Posts are edited as Markdown. A Portable Text field is converted on the way in and out, in the same shapes EmDash’s own client uses for headings, lists, emphasis, links, and code. A picture on its own line (`![alt](url)`) is an image block. An image that also has a library id, caption, or size stays on a fenced line so a save does not drop it, as do other blocks the editor does not edit. Save writes a draft. Publish, unpublish, discard draft, and trash are separate.
+Posts are edited as Markdown. A Portable Text field is converted on the way in and out, in the same shapes EmDash’s own client uses for headings, lists, emphasis, links, and code. A block becomes Markdown only when that Markdown reads back as the same block; anything else — embeds, custom marks, pictures with a blur placeholder — stays on an `<!--ec:block … -->` line, so a save never changes what the editor did not touch. A body that did not change is not sent at all.
+
+Pictures are lines like `![alt](url =1200x800 "caption"){wide}`: size, caption, and alignment are optional and map to EmDash’s image block. Drop, paste, or Insert Image… (⇧⌘I) uploads to the site’s media library. In the editor a picture draws inline and behaves as one object; a double-click edits its alt text, caption, and alignment. Links keep their Markdown hidden; ⌘K edits them, and pasting an address over selected words links them.
+
+Edits autosave a draft revision a moment after you stop typing, and are journaled on this Mac first, so a quit, crash, or dropped connection keeps them. Publish, Update, Unpublish, Schedule…, Preview in Browser (⌥⌘P), and Discard Unpublished Changes are in the Post menu. Post Details (⌃⌘I) edits the title, slug, excerpt, tags, and categories; tags and categories save to the site at once. In a collection without revisions, a published post is never autosaved, since every save there is live.
+
+Help › Emd Help lists the keys and the Markdown Emd understands.
 
 Type choices are Geist Sans, Geist Mono, the system sans, New York, SF Mono, Charter, and Georgia. Appearance follows the system, or stays light or dark. Geist is bundled under the SIL Open Font License; see `emdash-writer/Resources/Fonts/OFL.txt`.
 
