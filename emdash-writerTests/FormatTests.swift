@@ -40,3 +40,20 @@ final class FormatTests: XCTestCase {
         XCTAssertNil(view.linkAround(NSRange(location: 1, length: 0)))
     }
 }
+
+extension FormatTests {
+    func testPastingAnAddressOverWordsLinksThem() {
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name("emd-tests-\(UUID().uuidString)"))
+        defer { pasteboard.releaseGlobally() }
+        pasteboard.clearContents()
+        pasteboard.setString("https://example.com/a", forType: .string)
+        let view = editor("read the docs today", selection: NSRange(location: 5, length: 8))
+        XCTAssertTrue(view.pasteLinkOverSelection(pasteboard))
+        XCTAssertEqual(view.string, "read [the docs](https://example.com/a) today")
+        pasteboard.clearContents()
+        pasteboard.setString("just words", forType: .string)
+        let plain = editor("read the docs", selection: NSRange(location: 5, length: 3))
+        XCTAssertFalse(plain.pasteLinkOverSelection(pasteboard))
+        XCTAssertNil(QuietTextView.webAddress("mailto:someone@example.com"))
+    }
+}

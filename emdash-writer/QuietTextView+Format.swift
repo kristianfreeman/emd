@@ -95,6 +95,29 @@ extension QuietTextView {
             select: NSRange(location: found.whole.location, length: (found.label as NSString).length))
     }
 
+    /// Pasting a single web address over selected words links them, as most writing apps do.
+    /// Returns false when the paste should go ahead as text.
+    func pasteLinkOverSelection(_ pasteboard: NSPasteboard = .general) -> Bool {
+        let selection = selectedRange()
+        guard selection.length > 0, let address = Self.webAddress(pasteboard.string(forType: .string)) else {
+            return false
+        }
+        let words = (string as NSString).substring(with: selection)
+        guard !words.contains("\n"), !words.contains("]("), linkAround(selection) == nil else { return false }
+        let text = "[\(words)](\(address))"
+        replaceRange(
+            selection, with: text, select: NSRange(location: selection.location + (text as NSString).length, length: 0))
+        return true
+    }
+
+    static func webAddress(_ text: String?) -> String? {
+        guard let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines),
+            !trimmed.contains(where: \.isWhitespace),
+            let url = URL(string: trimmed), ["http", "https"].contains(url.scheme?.lowercased() ?? ""), url.host != nil
+        else { return nil }
+        return trimmed.replacingOccurrences(of: ")", with: "%29")
+    }
+
     // MARK: Pictures
 
     func showImageDetails(_ range: NSRange) {
