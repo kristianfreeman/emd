@@ -1,0 +1,508 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		053B2E3AA322E37E55E75243 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149AA6868C8A30AEEB56600A /* Theme.swift */; };
+		13D86DF726F70A443AAD618A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9A68BE2AD0D3D6B37A3C2C47 /* Assets.xcassets */; };
+		1FBCB85652A89C54628EC224 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1997372D79AFFE1DABF0DEC /* App.swift */; };
+		2670A13A7C586F58E7F062E8 /* WriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A68E90962122DAABA98535 /* WriterTests.swift */; };
+		36F7F3CAF4A0ABC3683B8A92 /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F49E3D6C9B1A689436FEDE3 /* JSONValue.swift */; };
+		390BA80BDB09920A60E06D32 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7DB4B04D177CF22A4D32E2F0 /* OFL.txt */; };
+		558C6E15328ECC9AAF1BEB41 /* PortableText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F514D1AE8F81592080866ED /* PortableText.swift */; };
+		574813DA6CBF946F4339E6BA /* LocalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26F9F3C45AB093B6DCC7E8DA /* LocalStore.swift */; };
+		5FDBE2E272F0DDD9D9A0EE3C /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 775668F89F66ABAF89B6692A /* KeychainStore.swift */; };
+		79D55294BCD1B6ACC621BBD0 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B56685E277997FE1DECA9B6B /* SidebarView.swift */; };
+		86CEBDEA05C62E3F430BEA67 /* GeistMono-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B7EA3CAD4EB9AE58A21009FB /* GeistMono-Variable.ttf */; };
+		89167C9F960C5120BB6648C1 /* WritingTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EE653014C87037C4B53439A /* WritingTextView.swift */; };
+		BB549AAE68CDB74386F8866A /* ConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F4E5E74AA0B356B327E80C /* ConnectView.swift */; };
+		D53DC6ADBCC492205D33A9AD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C669C9052D6A5F98E93BCAB /* SettingsView.swift */; };
+		D57391E58317BB97C7B8C04C /* Geist-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 74597F8141F8DA69692BE9A4 /* Geist-Variable.ttf */; };
+		DFFB97A0D4FDE435EA7E173C /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 736B9951C9096392FAAA87EF /* EditorView.swift */; };
+		E19D34EDBC52259153DA069E /* Pace.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF1339DD371852CC66FAD97 /* Pace.swift */; };
+		EAC06D80295C7DA3D04A0483 /* EmDashClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33C0B095AF800F41F0E4D353 /* EmDashClient.swift */; };
+		EE491AD879A6A90B132CC05D /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06EE77C311BDFD0CA7E1DE7B /* InspectorView.swift */; };
+		FF05EA3D6ED41741D1952865 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D0D8A23FD2EC5C80BF93B31 /* AppModel.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E4631D49AE8CB72379EE4C7D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B31D6BC4943BAD3855184BB5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EE2A2EEDFC49E77A7715412B;
+			remoteInfo = EmDashWriter;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		06EE77C311BDFD0CA7E1DE7B /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
+		0F49E3D6C9B1A689436FEDE3 /* JSONValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONValue.swift; sourceTree = "<group>"; };
+		0F514D1AE8F81592080866ED /* PortableText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortableText.swift; sourceTree = "<group>"; };
+		149AA6868C8A30AEEB56600A /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		15A68E90962122DAABA98535 /* WriterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WriterTests.swift; sourceTree = "<group>"; };
+		2057E82D8CF340BF10650EA8 /* EmDashWriter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EmDashWriter.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		26F9F3C45AB093B6DCC7E8DA /* LocalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStore.swift; sourceTree = "<group>"; };
+		2D0D8A23FD2EC5C80BF93B31 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		33C0B095AF800F41F0E4D353 /* EmDashClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmDashClient.swift; sourceTree = "<group>"; };
+		736B9951C9096392FAAA87EF /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
+		74597F8141F8DA69692BE9A4 /* Geist-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Variable.ttf"; sourceTree = "<group>"; };
+		775668F89F66ABAF89B6692A /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		7DB4B04D177CF22A4D32E2F0 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
+		7EE653014C87037C4B53439A /* WritingTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WritingTextView.swift; sourceTree = "<group>"; };
+		83F4E5E74AA0B356B327E80C /* ConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectView.swift; sourceTree = "<group>"; };
+		889F93AF7E3BAED2F84C116A /* EmDashWriterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EmDashWriterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8C669C9052D6A5F98E93BCAB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		9A68BE2AD0D3D6B37A3C2C47 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B56685E277997FE1DECA9B6B /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
+		B7EA3CAD4EB9AE58A21009FB /* GeistMono-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "GeistMono-Variable.ttf"; sourceTree = "<group>"; };
+		C1997372D79AFFE1DABF0DEC /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
+		DDF1339DD371852CC66FAD97 /* Pace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pace.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		37C85A86E556DACF95226EE6 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				2057E82D8CF340BF10650EA8 /* EmDashWriter.app */,
+				889F93AF7E3BAED2F84C116A /* EmDashWriterTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		55E0A6BB5598DE157C748BD6 /* emdash-writerTests */ = {
+			isa = PBXGroup;
+			children = (
+				15A68E90962122DAABA98535 /* WriterTests.swift */,
+			);
+			path = "emdash-writerTests";
+			sourceTree = "<group>";
+		};
+		5A394F40B1DB4DE89EF673EE = {
+			isa = PBXGroup;
+			children = (
+				7B71AEEA8B6D5100EF4A5ACA /* emdash-writer */,
+				55E0A6BB5598DE157C748BD6 /* emdash-writerTests */,
+				37C85A86E556DACF95226EE6 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7B71AEEA8B6D5100EF4A5ACA /* emdash-writer */ = {
+			isa = PBXGroup;
+			children = (
+				C1997372D79AFFE1DABF0DEC /* App.swift */,
+				2D0D8A23FD2EC5C80BF93B31 /* AppModel.swift */,
+				83F4E5E74AA0B356B327E80C /* ConnectView.swift */,
+				736B9951C9096392FAAA87EF /* EditorView.swift */,
+				33C0B095AF800F41F0E4D353 /* EmDashClient.swift */,
+				06EE77C311BDFD0CA7E1DE7B /* InspectorView.swift */,
+				0F49E3D6C9B1A689436FEDE3 /* JSONValue.swift */,
+				775668F89F66ABAF89B6692A /* KeychainStore.swift */,
+				26F9F3C45AB093B6DCC7E8DA /* LocalStore.swift */,
+				DDF1339DD371852CC66FAD97 /* Pace.swift */,
+				0F514D1AE8F81592080866ED /* PortableText.swift */,
+				8C669C9052D6A5F98E93BCAB /* SettingsView.swift */,
+				B56685E277997FE1DECA9B6B /* SidebarView.swift */,
+				149AA6868C8A30AEEB56600A /* Theme.swift */,
+				7EE653014C87037C4B53439A /* WritingTextView.swift */,
+				BE3DCF46E9F9519A62125164 /* Resources */,
+			);
+			path = "emdash-writer";
+			sourceTree = "<group>";
+		};
+		BE3DCF46E9F9519A62125164 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				9A68BE2AD0D3D6B37A3C2C47 /* Assets.xcassets */,
+				C0E50CC0BF9AA9A7C40EF80B /* Fonts */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		C0E50CC0BF9AA9A7C40EF80B /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				74597F8141F8DA69692BE9A4 /* Geist-Variable.ttf */,
+				B7EA3CAD4EB9AE58A21009FB /* GeistMono-Variable.ttf */,
+				7DB4B04D177CF22A4D32E2F0 /* OFL.txt */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BA5C72063AE4F2E263515104 /* EmDashWriterTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AFB291B6C5D77C53B6522917 /* Build configuration list for PBXNativeTarget "EmDashWriterTests" */;
+			buildPhases = (
+				C11810429389A43A76D6BEFF /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				96A68163D145BD0EEDBFA72A /* PBXTargetDependency */,
+			);
+			name = EmDashWriterTests;
+			packageProductDependencies = (
+			);
+			productName = EmDashWriterTests;
+			productReference = 889F93AF7E3BAED2F84C116A /* EmDashWriterTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		EE2A2EEDFC49E77A7715412B /* EmDashWriter */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FA141DED2AE43E183DA23296 /* Build configuration list for PBXNativeTarget "EmDashWriter" */;
+			buildPhases = (
+				22C5B8E83847B15F268F84E6 /* Sources */,
+				57AB4205438E876633A89174 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = EmDashWriter;
+			packageProductDependencies = (
+			);
+			productName = EmDashWriter;
+			productReference = 2057E82D8CF340BF10650EA8 /* EmDashWriter.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B31D6BC4943BAD3855184BB5 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					BA5C72063AE4F2E263515104 = {
+						ProvisioningStyle = Manual;
+					};
+					EE2A2EEDFC49E77A7715412B = {
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 5737562E810D5DFBA30BC05F /* Build configuration list for PBXProject "EmDashWriter" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 5A394F40B1DB4DE89EF673EE;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 37C85A86E556DACF95226EE6 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				EE2A2EEDFC49E77A7715412B /* EmDashWriter */,
+				BA5C72063AE4F2E263515104 /* EmDashWriterTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		57AB4205438E876633A89174 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				13D86DF726F70A443AAD618A /* Assets.xcassets in Resources */,
+				D57391E58317BB97C7B8C04C /* Geist-Variable.ttf in Resources */,
+				86CEBDEA05C62E3F430BEA67 /* GeistMono-Variable.ttf in Resources */,
+				390BA80BDB09920A60E06D32 /* OFL.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		22C5B8E83847B15F268F84E6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1FBCB85652A89C54628EC224 /* App.swift in Sources */,
+				FF05EA3D6ED41741D1952865 /* AppModel.swift in Sources */,
+				BB549AAE68CDB74386F8866A /* ConnectView.swift in Sources */,
+				DFFB97A0D4FDE435EA7E173C /* EditorView.swift in Sources */,
+				EAC06D80295C7DA3D04A0483 /* EmDashClient.swift in Sources */,
+				EE491AD879A6A90B132CC05D /* InspectorView.swift in Sources */,
+				36F7F3CAF4A0ABC3683B8A92 /* JSONValue.swift in Sources */,
+				5FDBE2E272F0DDD9D9A0EE3C /* KeychainStore.swift in Sources */,
+				574813DA6CBF946F4339E6BA /* LocalStore.swift in Sources */,
+				E19D34EDBC52259153DA069E /* Pace.swift in Sources */,
+				558C6E15328ECC9AAF1BEB41 /* PortableText.swift in Sources */,
+				D53DC6ADBCC492205D33A9AD /* SettingsView.swift in Sources */,
+				79D55294BCD1B6ACC621BBD0 /* SidebarView.swift in Sources */,
+				053B2E3AA322E37E55E75243 /* Theme.swift in Sources */,
+				89167C9F960C5120BB6648C1 /* WritingTextView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C11810429389A43A76D6BEFF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2670A13A7C586F58E7F062E8 /* WriterTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		96A68163D145BD0EEDBFA72A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EE2A2EEDFC49E77A7715412B /* EmDashWriter */;
+			targetProxy = E4631D49AE8CB72379EE4C7D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		2720983F37BDFAB13D319AC3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGNING_REQUIRED = YES;
+				CODE_SIGN_IDENTITY = "Apple Development: Kristian Freeman (RDHD7QCV9G)";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		473401A2C2AE61F1B162AC4F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.kristianfreeman.emdash-writer.tests";
+				PRODUCT_NAME = EmDashWriterTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/EmDashWriter.app/Contents/MacOS/EmDashWriter";
+			};
+			name = Debug;
+		};
+		8CA0B25B568DD09876FA15E8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "emdash-writer/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.kristianfreeman.emdash-writer";
+				PRODUCT_MODULE_NAME = EmDashWriter;
+				PRODUCT_NAME = EmDashWriter;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		A83EF7898B4C3B6CB6FFC918 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGNING_REQUIRED = YES;
+				CODE_SIGN_IDENTITY = "Apple Development: Kristian Freeman (RDHD7QCV9G)";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		AD7309EAD169D11357C69C8F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.kristianfreeman.emdash-writer.tests";
+				PRODUCT_NAME = EmDashWriterTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/EmDashWriter.app/Contents/MacOS/EmDashWriter";
+			};
+			name = Release;
+		};
+		D7ADCD30A915529F34E8F726 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "emdash-writer/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.kristianfreeman.emdash-writer";
+				PRODUCT_MODULE_NAME = EmDashWriter;
+				PRODUCT_NAME = EmDashWriter;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5737562E810D5DFBA30BC05F /* Build configuration list for PBXProject "EmDashWriter" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2720983F37BDFAB13D319AC3 /* Debug */,
+				A83EF7898B4C3B6CB6FFC918 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AFB291B6C5D77C53B6522917 /* Build configuration list for PBXNativeTarget "EmDashWriterTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				473401A2C2AE61F1B162AC4F /* Debug */,
+				AD7309EAD169D11357C69C8F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FA141DED2AE43E183DA23296 /* Build configuration list for PBXNativeTarget "EmDashWriter" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D7ADCD30A915529F34E8F726 /* Debug */,
+				8CA0B25B568DD09876FA15E8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = B31D6BC4943BAD3855184BB5 /* Project object */;
+}
