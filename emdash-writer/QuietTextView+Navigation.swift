@@ -39,10 +39,18 @@ extension QuietTextView {
         let start = block.content.location
         guard location != start else { return start }
         let selected = old.length == 0 && old.location == start
-        let length = textStorage?.length ?? 0
-        if selected && location > start { return min(block.last + 1, length) }
-        if selected && location < start { return max(block.first - 1, 0) }
+        if selected && location > start { return leave(block, to: block.last + 1) }
+        if selected && location < start { return leave(block, to: block.first - 1) }
         return start
+    }
+
+    /// Where a step off a picture lands: past the text's ends it stays on the picture, and inside another
+    /// picture's block it selects that picture.
+    private func leave(_ block: PictureBlock, to target: Int) -> Int {
+        let length = textStorage?.length ?? 0
+        guard target >= 0, target <= length, target != NSMaxRange(block.content) else { return block.content.location }
+        let other = pictureBlock(around: target).map(\.content.location)
+        return other ?? target
     }
 
     // MARK: Links
@@ -59,7 +67,10 @@ extension QuietTextView {
     /// The two sides of hidden link Markdown look like one place. A step from either side goes one visible
     /// character further, instead of a press that seems to do nothing.
     func snappedPastLinkMarkup(_ location: Int, from old: NSRange) -> Int {
-        guard old.length == 0, let markup = linkMarkup(around: location) else { return location }
+        // Only one-character steps; longer moves (⌘→, clicks) go where they go.
+        guard old.length == 0, abs(location - old.location) <= 1, let markup = linkMarkup(around: location) else {
+            return location
+        }
         let length = textStorage?.length ?? 0
         if old.location == markup.location && location > markup.location {
             return min(NSMaxRange(markup) + 1, length)
@@ -86,19 +97,26 @@ extension QuietTextView {
     /// the hidden address on the way back.
     override func moveWordRight(_ sender: Any?) {
         let start = selectedRange().location
-        super.moveWordRight(sender)
-        guard linkMarkup(around: start)?.location == start else { return }
+        guard let markup = linkMarkup(around: start), markup.location == start, isAddress(markup) else {
+            return super.moveWordRight(sender)
+        }
+        place(NSMaxRange(markup))
         super.moveWordRight(sender)
     }
 
     override func moveWordLeft(_ sender: Any?) {
         super.moveWordLeft(sender)
         let caret = selectedRange().location
-        guard let markup = linkMarkup(around: caret), caret > markup.location, caret <= NSMaxRange(markup) else {
-            return
-        }
+        guard let markup = linkMarkup(around: caret), isAddress(markup), caret > markup.location,
+            caret <= NSMaxRange(markup)
+        else { return }
         place(markup.location)
         super.moveWordLeft(sender)
+    }
+
+    /// The hidden `](address)` part, as against the hidden `[` that opens a link.
+    private func isAddress(_ markup: NSRange) -> Bool {
+        (string as NSString).substring(with: markup).hasPrefix("](")
     }
 
     private func stepOverLinkMarkup(forward: Bool) -> Int? {
@@ -110,7 +128,7 @@ extension QuietTextView {
         return nil
     }
 
-    private func place(_ location: Int) {
+    func place(_ location: Int) {
         super.setSelectedRanges(
             [NSValue(range: NSRange(location: location, length: 0))], affinity: .downstream, stillSelecting: false)
     }

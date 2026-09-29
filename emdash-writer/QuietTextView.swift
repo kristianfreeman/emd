@@ -122,6 +122,7 @@ final class QuietTextView: NSTextView, NSLayoutManagerDelegate {
 
     override func paste(_ sender: Any?) {
         guard !pasteImagesIfAny(), !pasteLinkOverSelection() else { return }
+        leaveSelectedPicture()
         pasteAsPlainText(sender)
     }
 

@@ -51,25 +51,62 @@ extension QuietTextView {
     }
 
     private func snapped(_ range: NSRange, from old: NSRange) -> NSRange {
-        guard range.length == 0 else { return widened(range) }
+        guard range.length == 0 else { return widened(range, from: old) }
         if let block = pictureBlock(around: range.location) {
             return NSRange(location: snappedToPicture(range.location, block: block, from: old), length: 0)
         }
         return NSRange(location: snappedPastLinkMarkup(range.location, from: old), length: 0)
     }
 
-    private func widened(_ range: NSRange) -> NSRange {
-        [range.location, NSMaxRange(range)].compactMap(imageContent(around:)).reduce(range) { NSUnionRange($0, $1) }
+    /// A selection that cuts into a picture takes all of it, or, if it held the picture and is shrinking,
+    /// lets all of it go. One that only touches a picture's edge leaves it alone.
+    private func widened(_ range: NSRange, from old: NSRange) -> NSRange {
+        [range.location, NSMaxRange(range)].compactMap(imageContent(around:)).reduce(range) { result, image in
+            let overlap = NSIntersectionRange(result, image).length
+            guard overlap > 0, overlap < image.length else { return result }
+            let held = NSIntersectionRange(old, image).length == image.length
+            return held ? Self.excluding(image, from: result) : NSUnionRange(result, image)
+        }
+    }
+
+    private static func excluding(_ image: NSRange, from range: NSRange) -> NSRange {
+        guard range.location > image.location else {
+            return NSRange(location: range.location, length: image.location - range.location)
+        }
+        let start = NSMaxRange(image)
+        return NSRange(location: start, length: max(0, NSMaxRange(range) - start))
+    }
+
+    /// Typing that does not come through insertText, like accents and input methods, or a paste, starts a
+    /// paragraph after a selected picture first instead of landing in its Markdown.
+    func leaveSelectedPicture() {
+        guard let image = selectedImage else { return }
+        startParagraph(after: image, with: "")
+    }
+
+    override func setMarkedText(_ string: Any, selectedRange: NSRange, replacementRange: NSRange) {
+        leaveSelectedPicture()
+        super.setMarkedText(string, selectedRange: selectedRange, replacementRange: replacementRange)
     }
 
     // MARK: Keys on a selected picture
 
     override func deleteBackward(_ sender: Any?) {
-        guard let image = selectedImage else {
-            caretPastLinkMarkup(forward: false)
-            return super.deleteBackward(sender)
+        if let image = selectedImage { return removeImage(image) }
+        if let above = pictureEndingJustBefore() { return place(above) }
+        caretPastLinkMarkup(forward: false)
+        super.deleteBackward(sender)
+    }
+
+    /// Backspace at the start of a paragraph right under a picture selects the picture, rather than pulling
+    /// the paragraph into the picture's line.
+    private func pictureEndingJustBefore() -> Int? {
+        let caret = selectedRange()
+        guard caret.length == 0, caret.location >= 2 else { return nil }
+        guard let image = imageContent(around: caret.location - 2), NSMaxRange(image) == caret.location - 1 else {
+            return nil
         }
-        removeImage(image)
+        return image.location
     }
 
     override func deleteForward(_ sender: Any?) {
