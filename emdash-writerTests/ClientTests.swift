@@ -303,3 +303,14 @@ extension ClientTests {
         XCTAssertEqual(group.value, "One, Two")
     }
 }
+
+extension ClientTests {
+    func testPreviewLinksResolveAgainstTheSite() {
+        let site = URL(string: "https://example.com")!
+        XCTAssertEqual(
+            EmDashClient.resolved("/posts/01A?_preview=tok", site: site)?.absoluteString,
+            "https://example.com/posts/01A?_preview=tok")
+        XCTAssertEqual(
+            EmDashClient.resolved("https://cdn.example/x", site: site)?.absoluteString, "https://cdn.example/x")
+    }
+}

@@ -69,6 +69,18 @@ extension AppModel {
         return entries.first { $0.id == remoteID }
     }
 
+    /// Saves, so the preview shows what was just typed, then opens the site's signed preview link.
+    func previewOpen() async {
+        guard let document, let client, let collection else { return }
+        await saveUnlessLive()
+        guard let remoteID = document.remoteID else { return }
+        do {
+            NSWorkspace.shared.open(try await client.previewURL(collection: collection.slug, id: remoteID))
+        } catch {
+            report(error)
+        }
+    }
+
     func showInAdmin(_ id: String) {
         guard let siteURL, let collection else { return }
         guard let url = RowLink.admin(site: siteURL, collection: collection.slug, id: id) else { return }

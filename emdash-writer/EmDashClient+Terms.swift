@@ -33,3 +33,21 @@ extension EmDashClient {
         }
     }
 }
+
+extension EmDashClient {
+    /// A signed link that shows the post's latest draft on the site, good for an hour.
+    func previewURL(collection: String, id: String) async throws -> URL {
+        let data = try await send(
+            "POST", "/content/\(Self.path(collection))/\(Self.path(id))/preview-url", body: .object([:]))
+        guard let text = data.object?["url"]?.string, let url = Self.resolved(text, site: site) else {
+            throw APIError(status: 500, code: "BAD_RESPONSE", message: "The site did not return a preview link.")
+        }
+        return url
+    }
+
+    /// The site answers with a path; an absolute URL is used as it is.
+    static func resolved(_ text: String, site: URL) -> URL? {
+        guard let url = URL(string: text) else { return nil }
+        return url.scheme == nil ? URL(string: text, relativeTo: site)?.absoluteURL : url
+    }
+}

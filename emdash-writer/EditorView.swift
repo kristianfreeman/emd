@@ -261,6 +261,9 @@ struct PostActions: View {
         }
         .disabled(!state.canDiscardChanges || model.busy)
         Divider()
+        Button("Preview in Browser") { Task { await model.previewOpen() } }
+            .keyboardShortcut("p", modifiers: [.command, .option])
+            .disabled(model.client == nil || (state.document.remoteID == nil && state.document.words == 0))
         Button("Show in Browser") { model.showOpenInBrowser() }
             .disabled(!model.canShowOpenInBrowser)
         Button("Show in EmDash Admin") {
