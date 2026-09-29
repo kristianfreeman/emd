@@ -7,6 +7,7 @@ struct HelpView: View {
         ("⌘S", "Save now (Emd also saves as you pause)"),
         ("⇧⌘P", "Publish, or publish changes"),
         ("⇧⌘I", "Insert image (or drop or paste one into the text)"),
+        ("⌃⌘I", "Post details: title, slug, excerpt"),
         ("⌥⌘F", "Search posts"),
         ("⌘F", "Find in this post"),
         ("⌘B  ⌘I  ⌘K", "Bold, italic, link"),

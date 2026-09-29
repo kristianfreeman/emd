@@ -278,3 +278,12 @@ extension ClientTests {
         XCTAssertFalse(PostState(live).writesLive)
     }
 }
+
+extension ClientTests {
+    func testSlugs() {
+        XCTAssertEqual(Slug.from("Hello, World! Café au lait"), "hello-world-cafe-au-lait")
+        XCTAssertEqual(Slug.from("  --  "), "")
+        XCTAssertEqual(Slug.cleaned("My  Post!"), "my-post-")
+        XCTAssertEqual(Slug.cleaned("-lead"), "lead")
+    }
+}

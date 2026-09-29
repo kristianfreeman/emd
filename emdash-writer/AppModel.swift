@@ -46,6 +46,7 @@ final class AppModel {
     var notice = ""
     var confirmTrash = false
     var confirmReload = false
+    var showingDetails = false
     var confirmDiscard = false
     var discardID: String?
     /// A short confirmation, like "Published", shown in the subtitle for a few seconds.

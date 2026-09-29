@@ -123,6 +123,7 @@ private struct EditorToolbar: ToolbarContent {
                 NoticeButton(model: model, palette: palette)
             }
             if let document = model.document, document.loaded {
+                DetailsButton(model: model, document: document)
                 Button {
                     model.chooseImages()
                 } label: {
@@ -132,6 +133,24 @@ private struct EditorToolbar: ToolbarContent {
                 .disabled(model.client == nil)
                 PublishButton(model: model, state: model.postState(document))
             }
+        }
+    }
+}
+
+/// Title, slug, and excerpt in a popover under the toolbar.
+private struct DetailsButton: View {
+    @Bindable var model: AppModel
+    var document: EditorDocument
+
+    var body: some View {
+        Button {
+            model.showingDetails.toggle()
+        } label: {
+            Label("Post Details", systemImage: "info.circle")
+        }
+        .help("Post Details: title, slug, excerpt (⌃⌘I)")
+        .popover(isPresented: $model.showingDetails, arrowEdge: .bottom) {
+            PostDetails(document: document, hasExcerpt: model.collection?.excerptField != nil)
         }
     }
 }

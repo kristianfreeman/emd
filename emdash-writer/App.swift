@@ -146,6 +146,9 @@ private struct PostMenu: View {
                 .disabled(true)
         }
         Divider()
+        Button("Post Details…") { model.showingDetails = true }
+            .keyboardShortcut("i", modifiers: [.command, .control])
+            .disabled(model.document?.loaded != true)
         Button("Insert Image…") { model.chooseImages() }
             .keyboardShortcut("i", modifiers: [.command, .shift])
             .disabled(model.document?.loaded != true || model.client == nil)
