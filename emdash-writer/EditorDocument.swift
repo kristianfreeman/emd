@@ -3,10 +3,18 @@ import Foundation
 import Observation
 
 struct TermGroup: Equatable, Identifiable {
+    var taxonomy = ""
     var label: String
-    var value: String
+    var terms: [TermLabel] = []
 
-    var id: String { label }
+    init(taxonomy: String, label: String, terms: [TermLabel]) {
+        self.taxonomy = taxonomy
+        self.label = label
+        self.terms = terms
+    }
+
+    var id: String { taxonomy.isEmpty ? label : taxonomy }
+    var value: String { terms.map(\.label).joined(separator: ", ") }
 }
 
 enum LibraryFilter: String, CaseIterable, Identifiable {

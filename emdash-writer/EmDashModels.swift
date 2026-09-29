@@ -62,8 +62,10 @@ struct TaxonomyInfo: Equatable, Identifiable {
     var name: String
     var label: String
     var collections: [String]
+    var labelSingular = ""
 
     var id: String { name }
+    var labelSingularOrLabel: String { labelSingular.isEmpty ? label : labelSingular }
 }
 
 struct TermLabel: Equatable, Identifiable {

@@ -287,3 +287,19 @@ extension ClientTests {
         XCTAssertEqual(Slug.cleaned("-lead"), "lead")
     }
 }
+
+extension ClientTests {
+    func testTermListsFlattenChildren() {
+        let list: [JSONValue] = [
+            .object([
+                "id": .string("c1"), "label": .string("Tech"),
+                "children": .array([.object(["id": .string("c2"), "label": .string("Swift"), "children": .array([])])]),
+            ]),
+            .object(["id": .string("c3"), "label": .string("Life"), "children": .array([])]),
+        ]
+        XCTAssertEqual(EmDashClient.flattened(list).map(\.label), ["Tech", "Swift", "Life"])
+        let group = TermGroup(
+            taxonomy: "tag", label: "Tags", terms: [TermLabel(id: "a", label: "One"), TermLabel(id: "b", label: "Two")])
+        XCTAssertEqual(group.value, "One, Two")
+    }
+}

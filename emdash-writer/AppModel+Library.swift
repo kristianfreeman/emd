@@ -130,7 +130,7 @@ extension AppModel {
     private static func term(_ index: Int, taxonomy: TaxonomyInfo, fetch: TermFetch) async -> IndexedTerm {
         let labels =
             (try? await fetch.client.terms(collection: fetch.collection, id: fetch.id, taxonomy: taxonomy.name)) ?? []
-        let term = TermGroup(label: taxonomy.label, value: labels.map(\.label).joined(separator: ", "))
+        let term = TermGroup(taxonomy: taxonomy.name, label: taxonomy.label, terms: labels)
         return IndexedTerm(index: index, term: term)
     }
 

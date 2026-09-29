@@ -74,7 +74,9 @@ extension EmDashClient {
     static func taxonomy(from value: JSONValue) -> TaxonomyInfo? {
         guard let object = value.object, let name = object["name"]?.string else { return nil }
         let collections = object["collections"]?.array?.compactMap(\.string) ?? []
-        return TaxonomyInfo(name: name, label: object["label"]?.string ?? name, collections: collections)
+        return TaxonomyInfo(
+            name: name, label: object["label"]?.string ?? name, collections: collections,
+            labelSingular: object["labelSingular"]?.string ?? "")
     }
 
     static func term(from value: JSONValue) -> TermLabel? {

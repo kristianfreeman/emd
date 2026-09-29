@@ -150,7 +150,7 @@ private struct DetailsButton: View {
         }
         .help("Post Details: title, slug, excerpt (⌃⌘I)")
         .popover(isPresented: $model.showingDetails, arrowEdge: .bottom) {
-            PostDetails(document: document, hasExcerpt: model.collection?.excerptField != nil)
+            PostDetails(model: model, document: document, hasExcerpt: model.collection?.excerptField != nil)
         }
     }
 }
