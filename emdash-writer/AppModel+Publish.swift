@@ -98,6 +98,7 @@ extension AppModel {
             clearJournal(document)
             remember(document)
             patchRow(document)
+            await refreshTerms(for: document)
             flash("Unpublished changes discarded")
         } catch {
             report(error)

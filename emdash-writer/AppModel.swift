@@ -52,6 +52,7 @@ final class AppModel {
     var unsentIDs: Set<String> = []
     /// Every term in each taxonomy, loaded when Post Details opens.
     var taxonomyTerms: [String: [TermLabel]] = [:]
+    @ObservationIgnored var termWrites: Task<Void, Never>?
     var confirmDiscard = false
     var discardID: String?
     /// A short confirmation, like "Published", shown in the subtitle for a few seconds.

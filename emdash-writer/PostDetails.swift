@@ -69,6 +69,10 @@ private struct TermsSection: View {
             if document.remoteID == nil {
                 Text("Save the post once to add \(taxonomy.label.lowercased()).")
                     .foregroundStyle(.secondary)
+            } else if !document.termsLoaded {
+                Text("Loading \(taxonomy.label.lowercased())…")
+                    .foregroundStyle(.secondary)
+                    .task { await model.refreshTerms(for: document) }
             } else {
                 chips
                 adder
@@ -119,7 +123,7 @@ private struct TermsSection: View {
                 .onSubmit(add)
             Menu {
                 ForEach(available) { term in
-                    Button(term.label) { run { await model.assign(term.label, in: taxonomy, to: document) } }
+                    Button(term.label) { run { await model.assign(term, in: taxonomy, to: document) } }
                 }
             } label: {
                 Image(systemName: "list.bullet")

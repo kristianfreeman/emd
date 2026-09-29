@@ -181,7 +181,7 @@ extension AppModel {
     private func stamp(_ entry: LoadedEntry, request: SaveRequest) {
         applyingRemote = true
         drafts.removeAll { $0.localID == request.localID }
-        request.document.noteSaved(entry, sentTitle: request.text.title, sentBody: request.text.body)
+        request.document.noteSaved(entry, sent: request.text.draft)
         applyingRemote = false
         if !request.document.dirty { clearJournal(request.document) }
     }

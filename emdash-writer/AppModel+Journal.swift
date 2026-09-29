@@ -94,6 +94,7 @@ extension AppModel {
         document = nil
         drafts = []
         entries = []
+        taxonomyTerms = [:]
         conflicted = false
     }
 }

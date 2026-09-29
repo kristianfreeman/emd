@@ -106,10 +106,12 @@ extension AppModel {
         let fetch = TermFetch(client: client, collection: collection.slug, id: remoteID)
         let groups = await termGroups(fetch)
         guard document.remoteID == remoteID else { return }
-        document.termGroups = groups
+        document.termGroups = groups.map(\.term)
+        // Term writes replace whole lists, so they wait until every list here came from the site.
+        document.termsLoaded = !groups.contains { $0.failed }
     }
 
-    private func termGroups(_ fetch: TermFetch) async -> [TermGroup] {
+    private func termGroups(_ fetch: TermFetch) async -> [IndexedTerm] {
         let applicable = taxonomies.filter { $0.collections.isEmpty || $0.collections.contains(fetch.collection) }
         return await withTaskGroup(of: IndexedTerm.self) { group in
             self.enqueueTerms(applicable, fetch: fetch, group: &group)
@@ -128,24 +130,24 @@ extension AppModel {
     }
 
     private static func term(_ index: Int, taxonomy: TaxonomyInfo, fetch: TermFetch) async -> IndexedTerm {
-        let labels =
-            (try? await fetch.client.terms(collection: fetch.collection, id: fetch.id, taxonomy: taxonomy.name)) ?? []
-        let term = TermGroup(taxonomy: taxonomy.name, label: taxonomy.label, terms: labels)
-        return IndexedTerm(index: index, term: term)
+        let labels = try? await fetch.client.terms(collection: fetch.collection, id: fetch.id, taxonomy: taxonomy.name)
+        let term = TermGroup(taxonomy: taxonomy.name, label: taxonomy.label, terms: labels ?? [])
+        return IndexedTerm(index: index, term: term, failed: labels == nil)
     }
 
-    private func gatheredTerms(_ group: inout TaskGroup<IndexedTerm>) async -> [TermGroup] {
+    private func gatheredTerms(_ group: inout TaskGroup<IndexedTerm>) async -> [IndexedTerm] {
         var collected: [IndexedTerm] = []
         for await item in group {
             collected.append(item)
         }
-        return collected.sorted { $0.index < $1.index }.map(\.term)
+        return collected.sorted { $0.index < $1.index }
     }
 }
 
 private struct IndexedTerm {
     var index: Int
     var term: TermGroup
+    var failed = false
 }
 
 private struct TermFetch {

@@ -54,6 +54,8 @@ final class EditorDocument {
     var scheduledAt: String?
     var draftRevisionID: String?
     var termGroups: [TermGroup] = []
+    /// Every taxonomy's terms for this post came from the site. Until then, term writes would drop terms.
+    var termsLoaded = false
     var dirty = false
     var loaded = false
     /// Why the post could not be opened, when it could not.
@@ -122,6 +124,7 @@ final class EditorDocument {
         scheduledAt = entry.scheduledAt
         draftRevisionID = entry.draftRevisionID
         termGroups = []
+        termsLoaded = false
         dirty = false
         loaded = true
         loadError = nil
@@ -143,7 +146,8 @@ final class EditorDocument {
         suppress = false
     }
 
-    func noteSaved(_ entry: LoadedEntry, sentTitle: String, sentBody: String) {
+    /// The site has `sent`. Anything typed since, in any field, stays unsaved.
+    func noteSaved(_ entry: LoadedEntry, sent: DraftText) {
         suppress = true
         remoteID = entry.id
         rev = entry.rev
@@ -152,14 +156,15 @@ final class EditorDocument {
         scheduledAt = entry.scheduledAt
         draftRevisionID = entry.draftRevisionID
         updatedAt = EditorDocument.date(entry.updatedAt)
+        let siteSlug = sent.slug.isEmpty ? entry.slug : sent.slug
         if slug.isEmpty {
             slug = entry.slug
         }
-        dirty = title != sentTitle || body != sentBody
-        baseTitle = sentTitle
-        baseBody = sentBody
-        baseExcerpt = excerpt
-        baseSlug = slug
+        dirty = title != sent.title || body != sent.body || excerpt != sent.excerpt || slug != siteSlug
+        baseTitle = sent.title
+        baseBody = sent.body
+        baseExcerpt = sent.excerpt
+        baseSlug = siteSlug
         loaded = true
         suppress = false
     }

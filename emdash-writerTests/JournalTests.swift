@@ -63,3 +63,18 @@ final class JournalTests: XCTestCase {
             updatedAt: nil, publishedAt: nil, scheduledAt: nil, draftRevisionID: nil)
     }
 }
+
+extension JournalTests {
+    func testFieldsTypedDuringASaveStayUnsaved() {
+        let document = EditorDocument()
+        document.apply(entry(body: "Body."))
+        document.excerpt = "abc"
+        let sent = document.text
+        document.excerpt = "abcd"
+        document.noteSaved(entry(body: "Body."), sent: sent)
+        XCTAssertTrue(document.dirty, "the d typed during the save has not reached the site")
+        XCTAssertEqual(document.savedText.excerpt, "abc")
+        document.noteSaved(entry(body: "Body."), sent: document.text)
+        XCTAssertFalse(document.dirty)
+    }
+}
