@@ -5,8 +5,8 @@ import CoreImage
 enum FocusDepth: Int, CaseIterable, Identifiable {
     case muted
     case dim
-    case faint
     case blurred
+    case faint
     case hazy
 
     var id: Int { rawValue }
@@ -15,8 +15,8 @@ enum FocusDepth: Int, CaseIterable, Identifiable {
         switch self {
         case .muted: "Muted"
         case .dim: "Dim"
-        case .faint: "Faint"
         case .blurred: "Blurred"
+        case .faint: "Faint"
         case .hazy: "Blurred and dim"
         }
     }
@@ -57,6 +57,27 @@ extension NSAttributedString.Key {
 
 /// Draws runs that carry `.focusBlur` through a Gaussian blur. Everything else draws as usual.
 final class FocusLayoutManager: NSLayoutManager {
+    /// Blurred runs draw their underline into the blurred picture instead; a sharp one would sit on top.
+    // swiftlint:disable:next function_parameter_count
+    override func drawUnderline(
+        forGlyphRange glyphRange: NSRange,
+        underlineType: NSUnderlineStyle,
+        baselineOffset: CGFloat,
+        lineFragmentRect: NSRect,
+        lineFragmentGlyphRange: NSRange,
+        containerOrigin: NSPoint
+    ) {
+        let character = characterIndexForGlyph(at: glyphRange.location)
+        let radius = textStorage.flatMap {
+            character < $0.length ? $0.attribute(.focusBlur, at: character, effectiveRange: nil) as? CGFloat : nil
+        }
+        guard (radius ?? 0) <= 0 else { return }
+        super.drawUnderline(
+            forGlyphRange: glyphRange, underlineType: underlineType, baselineOffset: baselineOffset,
+            lineFragmentRect: lineFragmentRect, lineFragmentGlyphRange: lineFragmentGlyphRange,
+            containerOrigin: containerOrigin)
+    }
+
     /// About 60 blurred lines at 2x. Past that, lines re-render as they scroll back in.
     private let blurred: NSCache<NSString, CGImage> = {
         let cache = NSCache<NSString, CGImage>()
@@ -169,7 +190,22 @@ private struct GlyphRun {
         let toText = textMatrix.inverted()
         let placed = (0..<count).map { positions[$0].applying(toText) }
         CTFontDrawGlyphs(font, glyphs, placed, count, context)
+        drawUnderline(attributes, in: context)
         return context.makeImage()
+    }
+
+    /// A link's underline goes into the same picture as its letters, so it blurs with them.
+    private func drawUnderline(_ attributes: [NSAttributedString.Key: Any], in context: CGContext) {
+        guard (attributes[.underlineStyle] as? Int ?? 0) != 0 else { return }
+        var last = glyphs[count - 1]
+        var advance = CGSize.zero
+        CTFontGetAdvancesForGlyphs(font, .horizontal, &last, &advance, 1)
+        let thickness = max(1, font.underlineThickness)
+        let y = positions[0].y - font.underlinePosition - thickness / 2
+        let width = positions[count - 1].x + advance.width - positions[0].x
+        let color = attributes[.underlineColor] as? NSColor ?? attributes[.foregroundColor] as? NSColor ?? .textColor
+        context.setFillColor((color.usingColorSpace(.sRGB) ?? color).cgColor)
+        context.fill(CGRect(x: positions[0].x, y: y, width: width, height: thickness))
     }
 
     private static func canvas(_ size: CGSize, scale: CGFloat) -> CGContext? {
@@ -193,7 +229,7 @@ private struct GlyphRun {
         let origin = positions[0]
         var parts = (0..<count).map { "\(glyphs[$0])@\(positions[$0].x - origin.x)" }
         parts.append("\(font.fontName)|\(font.pointSize)|\(radius)|\(scale)")
-        parts.append("\(ink(attributes))")
+        parts.append("\(ink(attributes))|\(attributes[.underlineStyle] as? Int ?? 0)")
         return parts.joined(separator: ",")
     }
 }
