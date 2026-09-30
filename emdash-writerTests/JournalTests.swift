@@ -78,3 +78,16 @@ extension JournalTests {
         XCTAssertFalse(document.dirty)
     }
 }
+
+extension JournalTests {
+    func testWritingBackTheSameValueIsNotAnEdit() {
+        let document = EditorDocument()
+        document.apply(entry(body: "Body."))
+        document.title = document.title
+        document.slug = document.slug
+        document.excerpt = document.excerpt
+        XCTAssertFalse(document.dirty, "opening Post Details must not make the post look edited")
+        document.excerpt = "new"
+        XCTAssertTrue(document.dirty)
+    }
+}

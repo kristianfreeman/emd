@@ -44,11 +44,12 @@ final class EditorDocument {
     /// A scratch post for the debug probe: it never saves and never journals.
     @ObservationIgnored var neverSaves = false
     var rev: String?
-    var slug = "" { didSet { mark() } }
+    /// Fields a form can write back unchanged, as Post Details does when it opens. Only a real change counts.
+    var slug = "" { didSet { if slug != oldValue { mark() } } }
     var status = "draft"
-    var title = "" { didSet { mark() } }
+    var title = "" { didSet { if title != oldValue { mark() } } }
     var body = "" { didSet { mark() } }
-    var excerpt = "" { didSet { mark() } }
+    var excerpt = "" { didSet { if excerpt != oldValue { mark() } } }
     var updatedAt: Date?
     var publishedAt: String?
     var scheduledAt: String?
