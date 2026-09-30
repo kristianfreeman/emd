@@ -339,3 +339,11 @@ extension ClientTests {
         XCTAssertFalse(PostState(document, keepsRevisions: false).writesLive, "not live until the schedule runs")
     }
 }
+
+extension ClientTests {
+    func testPreviewPathsFollowTheSitesAddresses() {
+        XCTAssertEqual(RowLink.path(collection: "posts", slug: "what-i-use"), "/blog/what-i-use")
+        XCTAssertEqual(RowLink.path(collection: "releases", slug: "v1"), "/releases/v1")
+        XCTAssertNil(RowLink.path(collection: "posts", slug: " "), "no slug: the site's default path")
+    }
+}

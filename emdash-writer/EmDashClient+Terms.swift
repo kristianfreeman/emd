@@ -35,10 +35,13 @@ extension EmDashClient {
 }
 
 extension EmDashClient {
-    /// A signed link that shows the post's latest draft on the site, good for an hour.
-    func previewURL(collection: String, id: String) async throws -> URL {
+    /// A signed link that shows the post's latest draft on the site, good for an hour. `path` is where the
+    /// site shows the post; without one the site uses its default, `/{collection}/{id}`, which a site that
+    /// routes by slug may redirect, dropping the preview token.
+    func previewURL(collection: String, id: String, path: String? = nil) async throws -> URL {
+        let body: JSONValue = path.map { .object(["pathPattern": .string($0)]) } ?? .object([:])
         let data = try await send(
-            "POST", "/content/\(Self.path(collection))/\(Self.path(id))/preview-url", body: .object([:]))
+            "POST", "/content/\(Self.path(collection))/\(Self.path(id))/preview-url", body: body)
         guard let text = data.object?["url"]?.string, let url = Self.resolved(text, site: site) else {
             throw APIError(status: 500, code: "BAD_RESPONSE", message: "The site did not return a preview link.")
         }

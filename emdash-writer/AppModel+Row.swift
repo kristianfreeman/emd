@@ -75,7 +75,9 @@ extension AppModel {
         await saveUnlessLive()
         guard let remoteID = document.remoteID else { return }
         do {
-            NSWorkspace.shared.open(try await client.previewURL(collection: collection.slug, id: remoteID))
+            let slug = document.savedText.slug.isEmpty ? document.slug : document.savedText.slug
+            let path = RowLink.path(collection: collection.slug, slug: slug)
+            NSWorkspace.shared.open(try await client.previewURL(collection: collection.slug, id: remoteID, path: path))
         } catch {
             report(error)
         }
@@ -169,6 +171,13 @@ enum RowLink {
             .appending(path: "content")
             .appending(path: collection)
             .appending(path: id)
+    }
+
+    /// Where the site shows a post: `/blog/<slug>` for posts, `/<collection>/<slug>` otherwise.
+    static func path(collection: String, slug: String) -> String? {
+        let trimmed = slug.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !trimmed.contains("/") else { return nil }
+        return "/\(folder(collection))/\(trimmed)"
     }
 
     private static func folder(_ collection: String) -> String {
