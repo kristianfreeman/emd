@@ -1,7 +1,7 @@
 import AppKit
 import XCTest
 
-@testable import EmDashWriter
+@testable import Emd
 
 final class ImageObjectTests: XCTestCase {
     private let line = "![](https://example.invalid/a.png =400x200)"

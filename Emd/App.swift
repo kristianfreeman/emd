@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct EmDashWriterApp: App {
+struct EmdApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     private var model: AppModel { delegate.model }
 

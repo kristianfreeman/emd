@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import EmDashWriter
+@testable import Emd
 
 @MainActor
 final class JournalTests: XCTestCase {
@@ -13,7 +13,7 @@ final class JournalTests: XCTestCase {
         // The test host is the app, so its store is the real one. Leave nothing behind in it.
         let support = try FileManager.default.url(
             for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
-        try? FileManager.default.removeItem(at: support.appending(path: "EmDashWriter/\(site)"))
+        try? FileManager.default.removeItem(at: support.appending(path: "Emd/\(site)"))
     }
 
     func testUnsentEditsComeBackWhenThePostReopens() {

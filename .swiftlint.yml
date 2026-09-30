@@ -3,8 +3,8 @@
 # These limits are intentionally tighter.
 
 included:
-  - emdash-writer
-  - emdash-writerTests
+  - Emd
+  - EmdTests
 
 excluded:
   - build

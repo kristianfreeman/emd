@@ -12,7 +12,7 @@ Edits autosave a draft revision a moment after you stop typing, and are journale
 
 Help › Emd Help lists the keys and the Markdown Emd understands.
 
-Type choices are Geist Sans, Geist Mono, the system sans, New York, SF Mono, Charter, and Georgia. Appearance follows the system, or stays light or dark. Geist is bundled under the SIL Open Font License; see `emdash-writer/Resources/Fonts/OFL.txt`.
+Type choices are Geist Sans, Geist Mono, the system sans, New York, SF Mono, Charter, and Georgia. Appearance follows the system, or stays light or dark. Geist is bundled under the SIL Open Font License; see `Emd/Resources/Fonts/OFL.txt`.
 
 ## Lint
 
@@ -24,15 +24,15 @@ Complexity warns at 5 and errors at 8. An `if` inside an `if` warns; a third lev
 
 ```sh
 xcodegen generate
-xcodebuild -scheme EmDashWriter -destination 'platform=macOS' test
-open EmDashWriter.xcodeproj
+xcodebuild -scheme Emd -destination 'platform=macOS' test
+open Emd.xcodeproj
 ```
 
 Debug and Release sign with the Apple Development identity in `project.yml`, so a build runs on this Mac. Release turns on the hardened runtime and a secure timestamp. Shipping to other Macs needs a Developer ID Application certificate and notarization: `scripts/release` archives, signs, notarizes, staples, and zips into `dist/` (setup notes are at the top of the script; `--skip-notarize` builds a signed zip without them).
 
 ## Probe
 
-Debug builds run a control channel for scripted checks and for Claude: HTTP on `127.0.0.1`, a random port, and a random token, written to `~/Library/Application Support/EmDashWriter/probe.json` (mode 600). Release builds do not contain it (`#if DEBUG`). `scripts/probe` is the client.
+Debug builds run a control channel for scripted checks and for Claude: HTTP on `127.0.0.1`, a random port, and a random token, written to `~/Library/Application Support/Emd/probe.json` (mode 600). Release builds do not contain it (`#if DEBUG`). `scripts/probe` is the client.
 
 ```sh
 scripts/probe GET /                    # the routes

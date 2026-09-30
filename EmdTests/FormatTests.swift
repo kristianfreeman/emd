@@ -1,7 +1,7 @@
 import AppKit
 import XCTest
 
-@testable import EmDashWriter
+@testable import Emd
 
 final class FormatTests: XCTestCase {
     private func editor(_ text: String, selection: NSRange) -> QuietTextView {

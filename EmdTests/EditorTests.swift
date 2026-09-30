@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import EmDashWriter
+@testable import Emd
 
 final class EditorTests: XCTestCase {
     func testMarkdownStylesHideMarkers() {
@@ -256,5 +256,28 @@ extension EditorTests {
         // Stale marker positions made TextKit rebuild glyphs for the whole post in bursts: over 100ms a key.
         XCTAssertLessThan(times.max() ?? 0, 30)
         withExtendedLifetime(scroll) {}
+    }
+}
+
+extension EditorTests {
+    /// Undo steps belong to the post's editor, so a closed post leaves none behind for ⌘Z to call into.
+    @MainActor
+    func testEachEditorKeepsItsOwnUndoHistory() {
+        let first = WritingColumn.Coordinator.probe()
+        let second = WritingColumn.Coordinator.probe()
+        XCTAssertFalse(first === second)
+        let view = QuietTextView.editor()
+        view.configure(
+            TextLook(
+                font: .systemFont(ofSize: 15), ink: TextInk(color: .black, muted: .gray, paper: .white),
+                lineHeight: 1.3, paragraphSpacing: 4))
+        view.delegate = first
+        XCTAssertTrue(view.allowsUndo)
+        XCTAssertTrue(view.undoManager === first.undo)
+        view.string = "Hello"
+        view.setSelectedRange(NSRange(location: 5, length: 0))
+        view.insertText("!", replacementRange: NSRange(location: NSNotFound, length: 0))
+        XCTAssertTrue(first.undo.canUndo)
+        XCTAssertFalse(second.undo.canUndo)
     }
 }

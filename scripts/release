@@ -39,7 +39,7 @@ mkdir -p "$build" dist
 xcodegen generate >/dev/null
 echo "Archiving Emd $version…"
 xcodebuild archive \
-  -scheme EmDashWriter -configuration Release \
+  -scheme Emd -configuration Release \
   -archivePath "$build/Emd.xcarchive" \
   CODE_SIGN_IDENTITY="$identity" DEVELOPMENT_TEAM="$team" CODE_SIGN_STYLE=Manual \
   OTHER_CODE_SIGN_FLAGS="--timestamp" \

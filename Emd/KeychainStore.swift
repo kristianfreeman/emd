@@ -2,7 +2,7 @@ import Foundation
 import Security
 
 enum KeychainStore {
-    private static let service = "com.kristianfreeman.emdash-writer"
+    private static let service = "com.kristianfreeman.emd"
     private static let account = "access-token"
     /// Items with this comment use the default access rule (this app's signing team), not a per-build binary lock.
     private static let marker = "team-access"

@@ -45,7 +45,7 @@
         static var announcement: URL? {
             let support = try? FileManager.default.url(
                 for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-            return support?.appending(path: "EmDashWriter/probe.json")
+            return support?.appending(path: "Emd/probe.json")
         }
 
         private func accept(_ connection: NWConnection) {

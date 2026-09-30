@@ -1,7 +1,7 @@
 import AppKit
 import XCTest
 
-@testable import EmDashWriter
+@testable import Emd
 
 final class ImageTests: XCTestCase {
     func testSiteMediaLineCarriesLibraryIDAndSize() {

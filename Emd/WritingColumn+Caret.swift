@@ -60,3 +60,17 @@ extension WritingColumn.Coordinator {
         scroll.reflectScrolledClipView(scroll.contentView)
     }
 }
+
+#if DEBUG
+    extension WritingColumn.Coordinator {
+        /// A coordinator with nothing on screen, for tests.
+        static func probe() -> WritingColumn.Coordinator {
+            WritingColumn.Coordinator(
+                WritingColumn(
+                    bodyText: .constant(""), bodyRevision: 0, fontChoice: .geistSans, fontSize: 15,
+                    palette: Palette.resolve(.light), focusMode: false, focusDepth: .muted, typewriter: false,
+                    gutter: .empty, caretKey: "", wantsFocus: false, onFocus: {}, onEscape: {}, onImages: { _, _ in },
+                    onReady: { _ in }, site: nil))
+        }
+    }
+#endif

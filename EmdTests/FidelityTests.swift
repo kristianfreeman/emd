@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import EmDashWriter
+@testable import Emd
 
 /// A post read from the site and saved back must come back as the same blocks.
 final class FidelityTests: XCTestCase {

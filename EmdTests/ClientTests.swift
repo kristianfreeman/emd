@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import EmDashWriter
+@testable import Emd
 
 final class ClientTests: XCTestCase {
     func testSiteURL() {

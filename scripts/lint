@@ -20,7 +20,7 @@ fi
 
 result=0
 xcrun swift-format lint --strict --recursive --configuration "$root/.swift-format" \
-  emdash-writer emdash-writerTests || result=1
+  Emd EmdTests || result=1
 
 if ! command -v swiftlint >/dev/null 2>&1; then
   echo "swiftlint is not on PATH. brew install swiftlint" >&2
@@ -29,5 +29,5 @@ else
   swiftlint lint --strict --config "$root/.swiftlint.yml" || result=1
 fi
 
-"$bin" emdash-writer emdash-writerTests || result=1
+"$bin" Emd EmdTests || result=1
 exit "$result"

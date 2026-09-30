@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import EmDashWriter
+@testable import Emd
 
 final class RowLinkTests: XCTestCase {
     private let site = URL(string: "https://kristianfreeman.com")!

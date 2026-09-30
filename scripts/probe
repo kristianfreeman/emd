@@ -5,7 +5,7 @@
 #   scripts/probe render editor.png [window]
 set -euo pipefail
 
-info="$HOME/Library/Application Support/EmDashWriter/probe.json"
+info="$HOME/Library/Application Support/Emd/probe.json"
 if [[ ! -r "$info" ]]; then
   echo "No probe.json. Is a Debug build of Emd running?" >&2
   exit 1

@@ -63,6 +63,7 @@ struct WritingColumn: NSViewRepresentable {
 
     static func dismantleNSView(_ scroll: NSScrollView, coordinator: Coordinator) {
         coordinator.rememberSpot()
+        coordinator.undo.removeAllActions()
     }
 
     func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSScrollView, context: Context) -> CGSize? {
@@ -78,6 +79,9 @@ struct WritingColumn: NSViewRepresentable {
 
     final class Coordinator: NSObject, NSTextViewDelegate {
         var parent: WritingColumn
+        /// Each post keeps its own undo history, and it goes with the post's editor. On the window's shared
+        /// undo manager, steps outlived the text view that made them, and ⌘Z after switching posts crashed.
+        let undo = UndoManager()
         weak var column: ColumnView?
         weak var scroll: NSScrollView?
         private var applying = false
@@ -196,6 +200,10 @@ struct WritingColumn: NSViewRepresentable {
             let length = (replacementString as NSString?)?.length ?? 0
             pendingEdit = NSRange(location: affectedCharRange.location, length: length)
             return true
+        }
+
+        func undoManager(for view: NSTextView) -> UndoManager? {
+            undo
         }
 
         /// No spelling marks on pictures: their folded Markdown would show one as a stray dot.
