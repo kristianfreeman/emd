@@ -11,7 +11,7 @@ import sys
 import time
 import urllib.request
 
-INFO = os.path.expanduser("~/Library/Application Support/Emd/probe.json")
+INFO = os.path.expanduser("~/Library/Application Support/Emd Debug/probe.json")
 PICTURE = "![](/_emdash/api/media/file/01M3Q9RGRBX4B8Z3CA9F7FVBG5.png =2273x1515)"
 results = []
 
@@ -147,9 +147,9 @@ def typing_speed():
     line = "Say **hi** and *there* to [the site](https://example.com), with more words to wrap the line.\n"
     for at in (60000, 119000, 100):
         replay = probe("POST", "/replay", {"seed": (line * 1300)[:120000], "at": at})["keystroke"]
-        # One keystroke per burst may pay TextKit's re-layout of everything below when a line first wraps:
-        # about 110ms at the top of 120,000 characters. Every other key must stay near a millisecond.
-        check(f"Typing at {at} of 120,000 stays under 10ms", replay["p95"] < 10 and replay["max"] < 150,
+        # Non-contiguous layout lays out only what a keystroke changes and what is on screen, so no key, even
+        # one that wraps a line at the top of 120,000 characters, may take longer than a frame.
+        check(f"Every key at {at} of 120,000 stays under a frame", replay["p95"] < 5 and replay["max"] < 16,
               f"p95 {replay['p95']:.1f}ms, max {replay['max']:.1f}ms")
 
 

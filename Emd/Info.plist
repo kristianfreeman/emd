@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDisplayName</key>
-	<string>Emd</string>
+	<string>$(EMD_DISPLAY_NAME)</string>
 	<key>CFBundleName</key>
-	<string>Emd</string>
+	<string>$(EMD_DISPLAY_NAME)</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
 	<key>NSHumanReadableCopyright</key>

@@ -124,9 +124,7 @@ private struct EditorToolbar: ToolbarContent {
                 Button {
                     model.chooseImages()
                 } label: {
-                    Working(active: model.uploadsInFlight > 0) {
-                        Label("Insert Image", systemImage: "photo")
-                    }
+                    WorkingLabel(title: "Insert Image", symbol: "photo", active: model.uploadsInFlight > 0)
                 }
                 .help(
                     model.uploadsInFlight > 0
@@ -225,17 +223,17 @@ private struct PublishButton: View {
     var state: PostState
 
     var body: some View {
+        // While publishing, the button keeps its look so the spinner reads on it, and a second click does nothing.
         Button {
+            guard !model.busy else { return }
             Task { await model.publish() }
         } label: {
-            Working(active: model.busy) {
-                Label(state.publishTitle, systemImage: state.publishSymbol)
-            }
+            WorkingLabel(title: state.publishTitle, symbol: state.publishSymbol, active: model.busy)
         }
         .labelStyle(.iconOnly)
         .tint(state.canPublish ? .accentColor : nil)
         .buttonStyle(.borderedProminent)
-        .disabled(!state.canPublish || model.busy)
+        .disabled(!state.canPublish)
         .help(publishHelp)
         Menu {
             PostActions(model: model, state: state, includesPublish: false)
@@ -255,19 +253,34 @@ private struct PublishButton: View {
 }
 
 /// A toolbar icon that turns into a spinner of the same size while its work runs.
-private struct Working<Content: View>: View {
+/// A toolbar button's label whose icon turns into a progress symbol while its work runs. The symbol is drawn
+/// like any icon, so the button keeps its size; a spinning ProgressView in a toolbar button came out clipped.
+private struct WorkingLabel: View {
+    var title: String
+    var symbol: String
     var active: Bool
-    @ViewBuilder var content: Content
 
     var body: some View {
-        ZStack {
-            content
-                .opacity(active ? 0 : 1)
-            if active {
-                ProgressView()
-                    .controlSize(.small)
-                    .scaleEffect(0.8)
+        Label {
+            Text(title)
+        } icon: {
+            // The icon stays, hidden, under the progress symbol so the button keeps its exact width.
+            ZStack {
+                Image(systemName: symbol).opacity(active ? 0 : 1)
+                if active { ProgressSymbol() }
             }
+        }
+    }
+}
+
+private struct ProgressSymbol: View {
+    var body: some View {
+        if #available(macOS 15, *) {
+            Image(systemName: "progress.indicator")
+                .symbolEffect(.variableColor.iterative, options: .repeating)
+        } else {
+            Image(systemName: "ellipsis")
+                .symbolEffect(.pulse, options: .repeating)
         }
     }
 }

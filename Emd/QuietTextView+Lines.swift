@@ -137,13 +137,18 @@ extension QuietTextView {
         ]
     }
 
+    static let noteLabel = try? NSRegularExpression(pattern: #"^\[\^[\p{L}\p{N}_-]+\]:"#)
+
     /// `[^1]: The note.` reads as a note: a little smaller, its label raised like the reference.
     func styleFootnoteLine(_ context: LineContext, text: String, style: inout LineStyle) -> Bool {
-        guard let match = text.firstMatch(of: /^\[\^[\p{L}\p{N}_-]+\]:/) else { return false }
+        // Every restyled line comes through here, so anything but a note line leaves on a prefix check.
+        guard text.hasPrefix("[^"),
+            let match = Self.noteLabel?.firstMatch(
+                in: text, range: NSRange(location: 0, length: (text as NSString).length))
+        else { return false }
         let small = MarkdownFonts.sized(style.base, style.base.pointSize * 0.9)
         style.storage.addAttribute(.font, value: small, range: strippedNewline(context.line, ns: context.ns))
-        let length = text.utf16.distance(from: match.range.lowerBound, to: match.range.upperBound)
-        let label = NSRange(location: context.line.location + 2, length: length - 4)
+        let label = NSRange(location: context.line.location + 2, length: match.range.length - 4)
         style.storage.addAttributes(Self.raised(small, color: accent), range: label)
         noteMarkers(NSRange(location: context.line.location, length: 2), editing: true, style: &style)
         noteMarkers(NSRange(location: NSMaxRange(label), length: 2), editing: true, style: &style)

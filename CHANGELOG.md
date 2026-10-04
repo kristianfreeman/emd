@@ -1,16 +1,19 @@
 # Changelog
 
-## 0.2.0 (unreleased)
+## 0.2.0
 
 ### Writing
 - Footnotes: `[^1]` in the text and `[^1]: The note.` below. References draw small and raised, notes draw as notes, and Format › Footnote (⌥⌘N) adds the next one and its note at the end of the post; from a note it goes back to the text.
 - On the site a reference is a superscript linked to its note, and the notes are one block at that spot, so any EmDash site draws them and the admin editor still opens the post.
+- Typing never waits on the length of the post: every keystroke stays under 2ms, even one that wraps a line at the top of 120,000 characters, which used to take 130ms.
 
 ### Toolbar
 - Publish is an icon: a paper plane to publish, an arrow to update, and a quiet check or clock when there is nothing to send.
-- Publishing and uploading show a spinner inside their own button, so the toolbar no longer shifts while they run.
+- Publishing and uploading show an animated progress symbol in their own button's icon, so nothing in the toolbar shifts or clips while they run.
 
 ### For developers
+- The Debug build is its own app, **Emd Debug**: bundle ID `com.kristianfreeman.emd.debug`, a yellow icon with caution stripes, and its own settings, Keychain items, saved text (`~/Library/Application Support/Emd Debug`), and logs. It runs beside the installed Emd without touching what is being written there, and connects to the site on its own.
+- Unit tests run in Emd Debug and open nothing: no post, no site connection.
 - `scripts/probe render out.png frame` draws the whole window, toolbar included, and the probe's format route takes `footnote`.
 
 ## 0.1.0

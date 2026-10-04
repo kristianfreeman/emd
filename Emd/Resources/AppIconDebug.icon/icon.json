@@ -1,0 +1,71 @@
+{
+  "fill-specializations": [
+    {
+      "value": {
+        "solid": "srgb:0.98039,0.80000,0.08235,1.00000"
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "solid": "srgb:0.92157,0.72157,0.03137,1.00000"
+      }
+    },
+    {
+      "appearance": "tinted",
+      "value": "automatic"
+    }
+  ],
+  "groups": [
+    {
+      "blur-material": 0,
+      "layers": [
+        {
+          "fill": "none",
+          "glass": false,
+          "hidden": false,
+          "name": "Stripes",
+          "opacity": 1,
+          "image-name-specializations": [
+            {
+              "value": "stripes.png"
+            },
+            {
+              "appearance": "dark",
+              "value": "stripes.png"
+            }
+          ]
+        },
+        {
+          "fill": "none",
+          "glass": false,
+          "hidden": false,
+          "name": "Dash",
+          "opacity": 1,
+          "image-name-specializations": [
+            {
+              "value": "dash-debug.png"
+            },
+            {
+              "appearance": "dark",
+              "value": "dash-debug.png"
+            }
+          ]
+        }
+      ],
+      "lighting": "individual",
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      },
+      "specular": false,
+      "translucency": {
+        "enabled": false,
+        "value": 0
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}

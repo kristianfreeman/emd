@@ -1,7 +1,8 @@
 import Foundation
 import os
 
-/// Timings for Instruments (signposts) and a short log at `~/Library/Logs/Emd/pace.log`.
+/// Timings for Instruments (signposts) and a short log at `~/Library/Logs/Emd/pace.log`, or under `Emd Debug`
+/// for the Debug build.
 enum Pace {
     struct Sample: Equatable, Sendable {
         var name: String
@@ -16,11 +17,11 @@ enum Pace {
         fileprivate var started: CFAbsoluteTime
     }
 
-    private static let log = OSLog(subsystem: "com.kristianfreeman.emd", category: "pace")
+    private static let log = OSLog(subsystem: AppIdentity.bundleID, category: "pace")
     private static let poster = OSSignposter(logHandle: log)
     private static let lock = NSLock()
     private static var samples: [Sample] = []
-    private static let fileQueue = DispatchQueue(label: "com.kristianfreeman.emd.pace", qos: .utility)
+    private static let fileQueue = DispatchQueue(label: "\(AppIdentity.bundleID).pace", qos: .utility)
 
     static func begin(_ name: StaticString) -> Span {
         Span(name: name, label: "\(name)", state: poster.beginInterval(name), started: CFAbsoluteTimeGetCurrent())
@@ -113,7 +114,7 @@ enum Pace {
 
     private static func logURL() -> URL? {
         guard let logs = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first else { return nil }
-        let directory = logs.appendingPathComponent("Logs/Emd", isDirectory: true)
+        let directory = logs.appendingPathComponent("Logs/\(AppIdentity.folder)", isDirectory: true)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         return directory.appendingPathComponent("pace.log")
     }

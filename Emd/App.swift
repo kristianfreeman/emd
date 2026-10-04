@@ -11,7 +11,12 @@ struct EmdApp: App {
 
     var body: some Scene {
         Window("Emd", id: "main") {
-            RootView(model: model)
+            // Hosting tests, the app opens nothing and connects to nothing.
+            if AppIdentity.isTesting {
+                Color.clear
+            } else {
+                RootView(model: model)
+            }
         }
         .defaultSize(width: 1180, height: 800)
         .commands {
@@ -37,7 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         #if DEBUG
             // Not when the app is only hosting unit tests: that copy would take over probe.json and then quit.
-            if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
+            if !AppIdentity.isTesting {
                 ProbeServer.shared.start(model: model)
             }
         #endif

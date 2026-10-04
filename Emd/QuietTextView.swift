@@ -53,6 +53,9 @@ final class QuietTextView: NSTextView, NSLayoutManagerDelegate {
         GlyphHook.install(on: QuietTextView.self)
         let storage = NSTextStorage()
         let layout = FocusLayoutManager()
+        // Lay out only what an edit touches and what is on screen. Contiguous layout re-laid every line below a
+        // line that wrapped: 130ms for one key at the top of 120,000 characters.
+        layout.allowsNonContiguousLayout = true
         storage.addLayoutManager(layout)
         let container = NSTextContainer(size: NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude))
         container.lineFragmentPadding = 5

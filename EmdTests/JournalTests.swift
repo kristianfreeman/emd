@@ -10,10 +10,10 @@ final class JournalTests: XCTestCase {
         for id in ["post-1", "local-journal-test"] {
             LocalStore.clearPending(site: site, id: id)
         }
-        // The test host is the app, so its store is the real one. Leave nothing behind in it.
+        // The test host is the Debug app, so its store is the Debug one. Leave nothing behind in it.
         let support = try FileManager.default.url(
             for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
-        try? FileManager.default.removeItem(at: support.appending(path: "Emd/\(site)"))
+        try? FileManager.default.removeItem(at: support.appending(path: "\(AppIdentity.folder)/\(site)"))
     }
 
     func testUnsentEditsComeBackWhenThePostReopens() {

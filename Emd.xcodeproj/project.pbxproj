@@ -17,8 +17,10 @@
 		18B064E5C5F26D302984F46D /* EmDashClient+Media.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C80687DA2A7F0CED7D7880 /* EmDashClient+Media.swift */; };
 		18D3D14FC7BF3A65961463C2 /* PostDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = E566229185518DB43AB60D52 /* PostDetails.swift */; };
 		1CA5B27DDA4C153FFA696845 /* WritingColumn+Caret.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C9BC88F48854AB7219CAB4 /* WritingColumn+Caret.swift */; };
+		1FEEB038AEE6BB42B99EA10B /* AppIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD1782DA7C3726D9F4857025 /* AppIdentity.swift */; };
 		22955FF2DE3CE94E771D5EE9 /* PortableText.swift in Sources */ = {isa = PBXBuildFile; fileRef = D24605EF2A2D17BB6F9DB40F /* PortableText.swift */; };
 		2936FD8186DD32EC6AC99019 /* PortableText+Read.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F0B642EEF7181CFE784C547 /* PortableText+Read.swift */; };
+		3011346699651ED28C892D68 /* FootnoteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9578D4715A96C57F21411C51 /* FootnoteTests.swift */; };
 		32B02F28EFA8A09FEFAC52C7 /* EmDashModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE688DA45B08E458A0F5BEE2 /* EmDashModels.swift */; };
 		3564306E90EA1BBEDEA72D9B /* PortableTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F84E5B8A2B8793FA837E62E0 /* PortableTextTests.swift */; };
 		3E34A72652111EEDCC4DDB26 /* ImageSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A612D30B754DE6408E68A99F /* ImageSource.swift */; };
@@ -34,6 +36,7 @@
 		565BD8C6B9F240770C72D632 /* QuietTextView+Style.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03EA0D0CB7A34B771E54B732 /* QuietTextView+Style.swift */; };
 		597E59192CA9DF81AF28BF85 /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F38C26F09F2A14B07F9CE5E4 /* HelpView.swift */; };
 		598392191BF4698E5A1199FE /* QuietTextView+Lists.swift in Sources */ = {isa = PBXBuildFile; fileRef = 260958A19EE2DEB4F59846CC /* QuietTextView+Lists.swift */; };
+		5B552562E9279BFC1F0CE85D /* AppIconDebug.icon in Resources */ = {isa = PBXBuildFile; fileRef = 717661DEDD9A11A3C92CF46B /* AppIconDebug.icon */; };
 		5CB3CB559B2B9AB6FD6E54C1 /* CaretMemory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B036AA824E5DE3A357F54E4D /* CaretMemory.swift */; };
 		5FC78AB9BE8946EE8E7604BD /* AppModel+Terms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62EF13A7BC1CFCA6095C32A4 /* AppModel+Terms.swift */; };
 		63E42D45A913CC13C1F56237 /* ImageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4E50BFBA4575DF52DAC5AF7 /* ImageTests.swift */; };
@@ -128,12 +131,14 @@
 		6ACF8934341A14A21A8D28C4 /* AppModel+Open.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Open.swift"; sourceTree = "<group>"; };
 		6CFBFBCB67F629BA9CAA0414 /* ConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectView.swift; sourceTree = "<group>"; };
 		6E38C3BE60F7B916201B1D77 /* JSONValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONValue.swift; sourceTree = "<group>"; };
+		717661DEDD9A11A3C92CF46B /* AppIconDebug.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIconDebug.icon; sourceTree = "<group>"; };
 		75A0D05589749476C35D6A34 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		7A1E3E0BD3E1B6540FE38B8C /* ProbeRoutes+Replay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProbeRoutes+Replay.swift"; sourceTree = "<group>"; };
 		88E91581D28A3A20D7CD5E80 /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
 		8ABC6299194A14A75A30F467 /* PostState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostState.swift; sourceTree = "<group>"; };
 		8B589247D0A9604E20FA54A3 /* EmDashClient+Content.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EmDashClient+Content.swift"; sourceTree = "<group>"; };
 		8F0B642EEF7181CFE784C547 /* PortableText+Read.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PortableText+Read.swift"; sourceTree = "<group>"; };
+		9578D4715A96C57F21411C51 /* FootnoteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FootnoteTests.swift; sourceTree = "<group>"; };
 		96E45FC312321B57E693E0FB /* PortableText+Inline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PortableText+Inline.swift"; sourceTree = "<group>"; };
 		9843AD1126736B585D1AC3A9 /* ProbeRoutes+Inspect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProbeRoutes+Inspect.swift"; sourceTree = "<group>"; };
 		99FB486D1AC410E849B36EE9 /* Emd.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Emd.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -145,6 +150,7 @@
 		B036AA824E5DE3A357F54E4D /* CaretMemory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaretMemory.swift; sourceTree = "<group>"; };
 		B1E2FAF62A688FB3871F93A4 /* ClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientTests.swift; sourceTree = "<group>"; };
 		B3EF50AF5FB7F3D9878B258C /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		BD1782DA7C3726D9F4857025 /* AppIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIdentity.swift; sourceTree = "<group>"; };
 		BE30BB8C4D942AFA6F9584C8 /* RowLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RowLinkTests.swift; sourceTree = "<group>"; };
 		C01AD330DED5743A2DC67B81 /* EditorDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorDocument.swift; sourceTree = "<group>"; };
 		C2E16C0DC5AD634CCB0AE4DF /* FocusDepth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusDepth.swift; sourceTree = "<group>"; };
@@ -181,6 +187,7 @@
 			isa = PBXGroup;
 			children = (
 				1173CA66185DE673FC346BE5 /* AppIcon.icon */,
+				717661DEDD9A11A3C92CF46B /* AppIconDebug.icon */,
 				3CE11B081AFEC26B6249D1FF /* Assets.xcassets */,
 				BC5EF6F93F622A8E4AEDE09B /* Fonts */,
 			);
@@ -211,6 +218,7 @@
 				B1E2FAF62A688FB3871F93A4 /* ClientTests.swift */,
 				30161F291C50C39C3D144E21 /* EditorTests.swift */,
 				DBCBE78B1AA3FF8520F5BE59 /* FidelityTests.swift */,
+				9578D4715A96C57F21411C51 /* FootnoteTests.swift */,
 				018E27C673BD1F53AB3E9F0D /* FormatTests.swift */,
 				ABA2B3A87A9A7033CB97F2EC /* ImageObjectTests.swift */,
 				A4E50BFBA4575DF52DAC5AF7 /* ImageTests.swift */,
@@ -236,6 +244,7 @@
 			isa = PBXGroup;
 			children = (
 				0D76E22AA0B984C096050836 /* App.swift */,
+				BD1782DA7C3726D9F4857025 /* AppIdentity.swift */,
 				DF0C0B4FD5B2F39E38F03731 /* AppModel.swift */,
 				DB8B0C3556522D75C60039E1 /* AppModel+Images.swift */,
 				F0817878FC0B116FDD3DF110 /* AppModel+Journal.swift */,
@@ -391,6 +400,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4724B4805D2439C4B01CE14C /* AppIcon.icon in Resources */,
+				5B552562E9279BFC1F0CE85D /* AppIconDebug.icon in Resources */,
 				D6A14F9444E2BCC49EB82CC3 /* Assets.xcassets in Resources */,
 				98532679BEB74C2695F520E0 /* Geist-Variable.ttf in Resources */,
 				810CDB1FE37156E60482C719 /* GeistMono-Variable.ttf in Resources */,
@@ -408,6 +418,7 @@
 				6AB1D12F6FECB200B0E893F7 /* ClientTests.swift in Sources */,
 				B113906093F6AB62DE5CBBA0 /* EditorTests.swift in Sources */,
 				42E0EC77C0EBB684CDA9EBF9 /* FidelityTests.swift in Sources */,
+				3011346699651ED28C892D68 /* FootnoteTests.swift in Sources */,
 				4AF404CDD90E74C637B4CB02 /* FormatTests.swift in Sources */,
 				10295CE01EAF2CCFD3972E01 /* ImageObjectTests.swift in Sources */,
 				63E42D45A913CC13C1F56237 /* ImageTests.swift in Sources */,
@@ -423,6 +434,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7348E54C76599928B4055B9F /* App.swift in Sources */,
+				1FEEB038AEE6BB42B99EA10B /* AppIdentity.swift in Sources */,
 				F84CFE8B015C9359ECB3F98D /* AppModel+Images.swift in Sources */,
 				86165457328B6380B06599A6 /* AppModel+Journal.swift in Sources */,
 				50FF5628BFD19B4A798F6B38 /* AppModel+Library.swift in Sources */,
@@ -511,7 +523,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.kristianfreeman.emd.tests;
 				PRODUCT_NAME = EmdTests;
 				SDKROOT = macosx;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Emd.app/Contents/MacOS/Emd";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Emd Debug.app/Contents/MacOS/Emd Debug";
 			};
 			name = Debug;
 		};
@@ -552,7 +564,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development: Kristian Freeman (RDHD7QCV9G)";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -566,7 +578,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.2.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -615,7 +627,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development: Kristian Freeman (RDHD7QCV9G)";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -635,7 +647,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.2.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -653,8 +665,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
+				EMD_DISPLAY_NAME = Emd;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_TESTABILITY = NO;
+				EXCLUDED_SOURCE_FILE_NAMES = AppIconDebug.icon;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Emd/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -672,8 +686,9 @@
 		98A3264C482179CF220A3790 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIconDebug;
 				COMBINE_HIDPI_IMAGES = YES;
+				EMD_DISPLAY_NAME = "Emd Debug";
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Emd/Info.plist;
@@ -681,9 +696,9 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.kristianfreeman.emd;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kristianfreeman.emd.debug;
 				PRODUCT_MODULE_NAME = Emd;
-				PRODUCT_NAME = Emd;
+				PRODUCT_NAME = "Emd Debug";
 				SDKROOT = macosx;
 			};
 			name = Debug;

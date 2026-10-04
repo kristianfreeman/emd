@@ -7,7 +7,7 @@ options:
   fileTypes:
     icon:
       file: true
-  postGenCommand: sed -i '' '/path = AppIcon.icon/s/lastKnownFileType = wrapper.icon/lastKnownFileType = folder.iconcomposer.icon/' Emd.xcodeproj/project.pbxproj
+  postGenCommand: sed -i '' '/path = AppIcon[A-Za-z]*.icon/s/lastKnownFileType = wrapper.icon/lastKnownFileType = folder.iconcomposer.icon/' Emd.xcodeproj/project.pbxproj
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -17,8 +17,8 @@ settings:
     CODE_SIGN_IDENTITY: "Apple Development: Kristian Freeman (RDHD7QCV9G)"
     CODE_SIGNING_REQUIRED: "YES"
     ENABLE_HARDENED_RUNTIME: "NO"
-    MARKETING_VERSION: "0.1.0"
-    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "0.2.0"
+    CURRENT_PROJECT_VERSION: "2"
 targets:
   Emd:
     type: application
@@ -30,6 +30,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kristianfreeman.emd
+        EMD_DISPLAY_NAME: Emd
         PRODUCT_NAME: Emd
         PRODUCT_MODULE_NAME: Emd
         INFOPLIST_FILE: Emd/Info.plist
@@ -38,7 +39,15 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         COMBINE_HIDPI_IMAGES: YES
       configs:
+        # The Debug build is its own app: its own settings, Keychain items, and data folder, so it can run
+        # beside the installed Emd. Hosted tests run in it too.
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.kristianfreeman.emd.debug
+          PRODUCT_NAME: Emd Debug
+          EMD_DISPLAY_NAME: Emd Debug
+          ASSETCATALOG_COMPILER_APPICON_NAME: AppIconDebug
         Release:
+          EXCLUDED_SOURCE_FILE_NAMES: AppIconDebug.icon
           ENABLE_TESTABILITY: NO
           ENABLE_HARDENED_RUNTIME: YES
           OTHER_CODE_SIGN_FLAGS: --timestamp
@@ -56,6 +65,9 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Emd.app/Contents/MacOS/Emd"
         BUNDLE_LOADER: "$(TEST_HOST)"
+      configs:
+        Debug:
+          TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Emd Debug.app/Contents/MacOS/Emd Debug"
 schemes:
   Emd:
     build:
