@@ -192,7 +192,11 @@ extension AppModel {
     func newPost() {
         filter = .all
         query = ""
-        if let empty = drafts.first(where: { $0.remoteID == nil && !$0.dirty && $0.text == DraftText.empty }) {
+        let start = startingBody()
+        let blank = DraftText(title: "", body: start, excerpt: "", slug: "")
+        if let empty = drafts.first(where: {
+            $0.remoteID == nil && !$0.dirty && $0.text == blank && $0.collectionSlug == collection?.slug
+        }) {
             document = empty
             editorFocusID = empty.localID
             return
@@ -201,9 +205,16 @@ extension AppModel {
         draft.collectionSlug = collection?.slug
         draft.loaded = true
         draft.status = "draft"
+        draft.start(body: start)
         drafts.insert(draft, at: 0)
         document = draft
         editorFocusID = draft.localID
+    }
+
+    /// A page starts with its regions, each empty under its divider. A post starts blank.
+    private func startingBody() -> String {
+        let regions = collection?.regionFields ?? []
+        return regions.isEmpty ? "" : Regions.joined(regions.map { ($0.slug, "") })
     }
 
     /// Reloading replaces the open post with the site's copy, so unsent edits ask first.

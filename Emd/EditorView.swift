@@ -63,28 +63,33 @@ struct EditorView: View {
         }
     }
 
+    private func column(_ document: EditorDocument) -> some View {
+        WritingColumn(
+            bodyText: Binding(get: { document.body }, set: { document.body = $0 }),
+            bodyRevision: document.textRevision,
+            fontChoice: model.fontChoice,
+            fontSize: CGFloat(model.fontSize),
+            palette: palette,
+            focusMode: model.focusMode,
+            focusDepth: model.focusDepth,
+            typewriter: model.typewriter,
+            gutter: GutterCopy(document),
+            caretKey: model.caretKey(document),
+            wantsFocus: model.editorFocusID == document.localID,
+            onFocus: { model.editorFocusID = nil },
+            onEscape: { model.focusSidebar() },
+            onImages: { sources, index in model.insertImages(sources, at: index) },
+            onReady: { view in model.attachEditor(view, for: document) },
+            site: model.siteURL,
+            objects: model.editorObjects(for: document)
+        )
+        .id(document.localID)
+    }
+
     @ViewBuilder
     private func loadedWriting(_ document: EditorDocument) -> some View {
         if document.loaded {
-            WritingColumn(
-                bodyText: Binding(get: { document.body }, set: { document.body = $0 }),
-                bodyRevision: document.textRevision,
-                fontChoice: model.fontChoice,
-                fontSize: CGFloat(model.fontSize),
-                palette: palette,
-                focusMode: model.focusMode,
-                focusDepth: model.focusDepth,
-                typewriter: model.typewriter,
-                gutter: GutterCopy(document),
-                caretKey: model.caretKey(document),
-                wantsFocus: model.editorFocusID == document.localID,
-                onFocus: { model.editorFocusID = nil },
-                onEscape: { model.focusSidebar() },
-                onImages: { sources, index in model.insertImages(sources, at: index) },
-                onReady: { view in model.attachEditor(view, for: document) },
-                site: model.siteURL
-            )
-            .id(document.localID)
+            column(document)
         } else if let error = document.loadError {
             ContentUnavailableView {
                 Label("Couldn’t Open This Post", systemImage: "exclamationmark.triangle")

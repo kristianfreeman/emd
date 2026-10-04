@@ -1,12 +1,15 @@
 import AppKit
 
-/// What an image line shows above itself: the picture at `size`, in the space before the line.
+/// What an object line shows above itself, in the space before the line: a picture at `size`, or, for a block
+/// a plugin defines or a region's start, a card or a divider drawn by `ObjectFace`.
 final class InlinePreview: NSObject {
     let url: URL
     let size: NSSize
     let dimmed: Bool
     var caption = ""
     var alignment = ""
+    /// Set for a block card or a region divider; nil for a picture.
+    var face: ObjectFace?
 
     static let captionHeight: CGFloat = 26
 
@@ -16,13 +19,22 @@ final class InlinePreview: NSObject {
         self.dimmed = dimmed
     }
 
+    init(face: ObjectFace, size: NSSize, dimmed: Bool) {
+        url = URL(fileURLWithPath: "/")
+        self.size = size
+        self.dimmed = dimmed
+        self.face = face
+    }
+
     /// Height the line makes room for: the picture, its gaps, and a caption when there is one.
     var room: CGFloat {
         size.height + QuietTextView.imageGap * 2 + (caption.isEmpty ? 0 : Self.captionHeight)
     }
 
-    /// Where the picture sits across the column: centered, or against the text's left or right edge.
+    /// Where the picture sits across the column: centered, or against the text's left or right edge. Cards and
+    /// dividers run the width of the text.
     func frame(top: CGFloat, text: NSRect) -> NSRect {
+        if face != nil { return NSRect(x: text.minX + 5, y: top, width: text.width - 10, height: size.height) }
         let x: CGFloat
         switch alignment {
         case "left": x = text.minX + 5
@@ -43,6 +55,7 @@ final class InlinePreview: NSObject {
     }
 
     func draw(in frame: NSRect, placeholder: NSColor) {
+        if let face { return face.draw(in: frame, ink: placeholder, dimmed: dimmed) }
         NSGraphicsContext.saveGraphicsState()
         defer { NSGraphicsContext.restoreGraphicsState() }
         NSBezierPath(roundedRect: frame, xRadius: 8, yRadius: 8).addClip()
@@ -99,7 +112,7 @@ extension QuietTextView {
         return true
     }
 
-    private func foldSource(_ content: NSRange, editing: Bool, style: inout LineStyle) {
+    func foldSource(_ content: NSRange, editing: Bool, style: inout LineStyle) {
         guard !editing else {
             style.storage.addAttribute(.foregroundColor, value: mutedColor, range: content)
             return
@@ -112,7 +125,7 @@ extension QuietTextView {
     }
 
     /// Folded, the source line is one point tall. The picture's room is added to the line in layout.
-    private func imageParagraph(_ size: NSSize, editing: Bool, _ style: LineStyle) -> NSParagraphStyle {
+    func imageParagraph(_ size: NSSize, editing: Bool, _ style: LineStyle) -> NSParagraphStyle {
         let paragraph = copiedParagraph(style.paragraph)
         guard !editing else { return paragraph }
         paragraph.lineHeightMultiple = 0

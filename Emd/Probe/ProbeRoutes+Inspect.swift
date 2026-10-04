@@ -69,13 +69,20 @@
             return .png(png)
         }
 
+        /// The main window's area with whatever of this app is on screen there, popovers and sheets included.
         private func framed() -> ProbeResponse {
-            guard let number = view?.window?.windowNumber,
+            guard let window = view?.window ?? NSApp.mainWindow, let screen = window.screen ?? NSScreen.screens.first,
                 let image = CGWindowListCreateImage(
-                    .null, .optionIncludingWindow, CGWindowID(number), [.boundsIgnoreFraming, .bestResolution]),
+                    Self.flipped(window.frame, in: screen), .optionOnScreenOnly, kCGNullWindowID, [.bestResolution]),
                 let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])
             else { return Self.failure("Could not image the window.") }
             return .png(png)
+        }
+
+        /// AppKit counts up from the bottom of the main screen; Core Graphics counts down from its top.
+        private static func flipped(_ frame: NSRect, in screen: NSScreen) -> CGRect {
+            let top = NSScreen.screens.first?.frame.maxY ?? screen.frame.maxY
+            return CGRect(x: frame.minX, y: top - frame.maxY, width: frame.width, height: frame.height)
         }
 
         /// Timings by name from `Pace`, memory, and counts. `?reset=1` clears the timings after reading.

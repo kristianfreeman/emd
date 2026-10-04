@@ -159,11 +159,33 @@ private struct PostMenu: View {
         Button("Insert Image…") { model.chooseImages() }
             .keyboardShortcut("i", modifiers: [.command, .shift])
             .disabled(model.document?.loaded != true || model.client == nil)
+        InsertBlockMenu(model: model)
         Divider()
         Button("Move to Trash…") {
             if let id = model.document?.id { model.requestTrash(id) }
         }
         .disabled(model.document == nil || model.busy)
+    }
+}
+
+/// Post › Insert: the custom blocks the site's plugins define, grouped by their category.
+private struct InsertBlockMenu: View {
+    var model: AppModel
+
+    var body: some View {
+        let groups = Dictionary(grouping: model.blockDefs.values, by: \.category)
+        if !groups.isEmpty {
+            Menu("Insert") {
+                ForEach(groups.keys.sorted(), id: \.self) { category in
+                    Section(category) {
+                        ForEach((groups[category] ?? []).sorted { $0.label < $1.label }) { definition in
+                            Button(definition.label) { model.editorView?.insertBlock(definition) }
+                        }
+                    }
+                }
+            }
+            .disabled(model.document?.loaded != true)
+        }
     }
 }
 

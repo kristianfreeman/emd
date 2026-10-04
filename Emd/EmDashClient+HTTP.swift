@@ -169,7 +169,7 @@ extension EmDashClient {
             slug: item["slug"]?.string ?? "",
             status: item["status"]?.string ?? "draft",
             title: text(data, field: collection.titleField),
-            body: editorText(data, field: collection.bodyField),
+            body: body(data, collection: collection),
             excerpt: collection.excerptField.flatMap { data[$0.slug]?.string } ?? "",
             updatedAt: item["updatedAt"]?.string,
             publishedAt: item["publishedAt"]?.string,
@@ -181,6 +181,13 @@ extension EmDashClient {
     static func text(_ data: [String: JSONValue], field: FieldDef?) -> String {
         guard let field else { return "" }
         return data[field.slug]?.string ?? ""
+    }
+
+    /// The body field's Markdown, or every region under its marker for an entry written in several.
+    static func body(_ data: [String: JSONValue], collection: CollectionDef) -> String {
+        let regions = collection.regionFields
+        guard !regions.isEmpty else { return editorText(data, field: collection.bodyField) }
+        return Regions.joined(regions.map { ($0.slug, data[$0.slug]?.string ?? "") })
     }
 
     static func editorText(_ data: [String: JSONValue], field: FieldDef?) -> String {

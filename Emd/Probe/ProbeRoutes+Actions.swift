@@ -13,9 +13,13 @@
         ]
 
         /// `{"id": "…"}` opens a post from the list. It loads in the background; poll `GET /state`.
-        func open(_ request: ProbeRequest) -> ProbeResponse {
+        /// `{"id": "…", "collection": "pages"}`. The collection, when given, is chosen first.
+        func open(_ request: ProbeRequest) async -> ProbeResponse {
             guard let id = request.body.object?["id"]?.string, !id.isEmpty else {
                 return Self.failure("Send {\"id\": …}.")
+            }
+            if let slug = request.body.object?["collection"]?.string, slug != model.collection?.slug {
+                await model.chooseCollection(slug)
             }
             model.openFromList(id)
             return .json(.object(["opening": .string(id)]))
@@ -99,6 +103,36 @@
             }
             if marker.isEmpty { view.insertFootnote() } else { view.toggleMarker(marker) }
             return .json(.object(["selection": Self.range(view.selectedRange())]))
+        }
+
+        /// `{"manifest": {…}, "regions": {"aside": "Aside"}}`: custom blocks as if the site's manifest declared
+        /// them, and regions for the open post, so cards and dividers can be seen before a site has either.
+        func objects(_ request: ProbeRequest) -> ProbeResponse {
+            let body = request.body.object ?? [:]
+            if let manifest = body["manifest"] { model.blockDefs = PageBlocks.definitions(fromManifest: manifest) }
+            if let regions = body["regions"]?.object { model.probeRegions = regions.compactMapValues(\.string) }
+            return .json(
+                .object([
+                    "blocks": .array(model.blockDefs.keys.sorted().map { .string($0) }),
+                    "regions": .number(Double(model.probeRegions?.count ?? 0)),
+                ]))
+        }
+
+        /// `{"at": 120}`: opens the details of the picture or card at a character, as a double-click does.
+        func openObject(_ request: ProbeRequest) -> ProbeResponse {
+            let at = Int(request.body.object?["at"]?.number ?? 0)
+            guard let view, let object = view.imageContent(around: at) else { return Self.failure("No object there.") }
+            view.showImageDetails(object)
+            return .json(.object(["object": Self.range(object)]))
+        }
+
+        /// `{"type": "musicList"}`: Post › Insert at the caret, as the menu does.
+        func insertObject(_ request: ProbeRequest) -> ProbeResponse {
+            guard let view, let definition = model.blockDefs[request.body.object?["type"]?.string ?? ""] else {
+                return Self.failure("Open a post, and send a type the site defines.")
+            }
+            view.insertBlock(definition)
+            return .json(.object(["text": .string(view.string)]))
         }
 
         /// `{"target": "editor" | "sidebar" | "search"}`

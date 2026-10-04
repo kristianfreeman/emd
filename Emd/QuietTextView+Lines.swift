@@ -39,6 +39,7 @@ extension QuietTextView {
         let text = context.ns.substring(with: context.line)
         if isFence(text) { return fenceResult(context, style: &style) }
         if context.inCode { return codeResult(context, style: &style) }
+        if styleObjectLine(context, text: text, style: &style) { return false }
         if styleImageLine(context, text: text, style: &style) { return false }
         if styleFootnoteLine(context, text: text, style: &style) { return false }
         styleListLine(context.line, text: text, style: &style)

@@ -174,7 +174,10 @@ extension QuietTextView {
 
     // MARK: Pictures
 
+    /// Pictures open their details, cards their form. A region's divider has nothing to edit.
     func showImageDetails(_ range: NSRange) {
+        if card(range) != nil { return showBlockDetails(range) }
+        guard !isDivider(range) else { return }
         guard let image = ImageLine((string as NSString).substring(with: range)) else { return }
         let details = ImageDetails(
             image,
@@ -206,22 +209,28 @@ extension QuietTextView {
 
     private static var popover: NSPopover?
 
-    private func present<Content: View>(_ content: Content, at rect: NSRect) {
+    /// `rect` is in `view`'s coordinates; this text view's by default.
+    func present<Content: View>(_ content: Content, at rect: NSRect, in view: NSView? = nil) {
         closePopover()
         let popover = NSPopover()
         popover.behavior = .transient
-        popover.contentViewController = NSHostingController(rootView: content)
-        popover.show(relativeTo: rect, of: self, preferredEdge: .maxY)
+        let hosting = NSHostingController(rootView: content)
+        // Sized before it shows. A form measured after showing shrank the popover from the bottom, which pulled
+        // its arrow off what it points at.
+        hosting.view.layoutSubtreeIfNeeded()
+        popover.contentSize = hosting.view.fittingSize
+        popover.contentViewController = hosting
+        popover.show(relativeTo: rect, of: view ?? self, preferredEdge: .maxY)
         Self.popover = popover
     }
 
-    private func closePopover() {
+    func closePopover() {
         Self.popover?.close()
         Self.popover = nil
     }
 
     /// The first line of `range` in this view's coordinates.
-    private func firstRect(for range: NSRange) -> NSRect {
+    func firstRect(for range: NSRange) -> NSRect {
         guard let window else { return .zero }
         let screen = firstRect(forCharacterRange: range, actualRange: nil)
         return convert(window.convertFromScreen(screen), from: nil)

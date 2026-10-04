@@ -69,7 +69,7 @@ enum WriterText {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             let fence = trimmed.hasPrefix("```")
             inCode = inCode != fence
-            guard !fence, !inCode, !trimmed.hasPrefix("!["), !trimmed.hasPrefix("<!--ec:block") else { return }
+            guard !fence, !inCode, !trimmed.hasPrefix("!["), !trimmed.hasPrefix("<!--") else { return }
             count += words(in: prose(line))
         }
         return count

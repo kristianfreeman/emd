@@ -135,6 +135,15 @@ final class EditorDocument {
         suppress = false
     }
 
+    /// A new post's starting text, like a page's empty regions. It is not an edit.
+    func start(body text: String) {
+        suppress = true
+        body = text
+        captureBase()
+        textRevision += 1
+        suppress = false
+    }
+
     func seed(title: String, slug: String, status: String) {
         suppress = true
         self.title = title

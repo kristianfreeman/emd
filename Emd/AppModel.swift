@@ -37,6 +37,12 @@ final class AppModel {
         didSet { defaults.set(showInspector, forKey: "inspector") }
     }
     var taxonomies: [TaxonomyInfo] = []
+    /// Custom Portable Text blocks the site's plugins define, by `_type`, from the manifest.
+    var blockDefs: [String: BlockDef] = [:]
+    #if DEBUG
+        /// Regions the probe gives a scratch post, which belongs to no page collection.
+        var probeRegions: [String: String]?
+    #endif
     var busy = false
     /// Cached posts are on screen while the site is still connecting.
     var warming = false

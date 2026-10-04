@@ -130,7 +130,7 @@ extension PortableText {
         return block.keys.allSatisfy(allowed.contains)
     }
 
-    private static func fence(_ block: [String: JSONValue]) -> String {
+    static func fence(_ block: [String: JSONValue]) -> String {
         let data = (try? JSONValue.object(block).data()) ?? Data("{}".utf8)
         let json = String(decoding: data, as: UTF8.self)
         return "<!--ec:block \(json) -->"

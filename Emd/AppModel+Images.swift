@@ -8,6 +8,17 @@ extension AppModel {
         editorDocumentID = document.localID
     }
 
+    /// The site's custom blocks, and the regions of the entry's collection, for the editor to draw.
+    func editorObjects(for document: EditorDocument) -> EditorObjects {
+        let collection = collections.first { $0.slug == (document.collectionSlug ?? collectionSlug) } ?? self.collection
+        let regions = (collection?.regionFields ?? []).map { ($0.slug, $0.label) }
+        var objects = EditorObjects(blocks: blockDefs, regions: Dictionary(regions) { first, _ in first })
+        #if DEBUG
+            if let probeRegions { objects.regions = probeRegions }
+        #endif
+        return objects
+    }
+
     func chooseImages() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.image]

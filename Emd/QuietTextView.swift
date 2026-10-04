@@ -47,6 +47,10 @@ final class QuietTextView: NSTextView, NSLayoutManagerDelegate {
     }
     /// How wide a full-width picture may be: the window, less its margins.
     var imageFullWidth: CGFloat = 0
+    /// Custom blocks the site's plugins define, by `_type`. Their lines draw as cards.
+    var blockDefs: [String: BlockDef] = [:]
+    /// A page's region fields and their labels. Their marker lines draw as dividers.
+    var regionLabels: [String: String] = [:]
 
     /// TextKit 1. `NSTextView()` on current macOS is TextKit 2 and leaves `layoutManager` nil.
     static func editor() -> QuietTextView {

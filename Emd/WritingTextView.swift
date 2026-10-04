@@ -26,6 +26,8 @@ struct WritingColumn: NSViewRepresentable {
     /// Hands the model the page, so an upload can land as an edit on it.
     var onReady: (QuietTextView) -> Void
     var site: URL?
+    /// The site's custom blocks and this entry's regions, which draw as cards and dividers.
+    var objects = EditorObjects()
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -140,33 +142,13 @@ struct WritingColumn: NSViewRepresentable {
             focusIfWanted()
         }
 
-        private func configureColumn(_ parent: WritingColumn, _ column: ColumnView) {
-            column.bodyView.placeholder = "Start writing…"
-            column.bodyView.siteURL = parent.site
-            column.bodyView.accent = parent.palette.nsAccent
-            column.bodyView.focusMode = parent.focusMode
-            column.bodyView.focusDepth = parent.focusDepth
-            column.bodyView.typewriter = parent.typewriter
-            column.bodyView.configure(
-                look(parent, size: parent.fontSize, lineHeight: 1.32, spacing: parent.fontSize * 0.28))
-        }
-
-        private func look(_ parent: WritingColumn, size: CGFloat, lineHeight: CGFloat, spacing: CGFloat) -> TextLook {
-            TextLook(
-                font: parent.fontChoice.nsFont(size: size),
-                ink: TextInk(color: parent.palette.nsInk, muted: parent.palette.nsMuted, paper: parent.palette.nsPaper),
-                lineHeight: lineHeight,
-                paragraphSpacing: spacing
-            )
-        }
-
         private func syncText(_ parent: WritingColumn, _ column: ColumnView) -> ColumnChange {
             var changed = ColumnChange()
             changed.body = parent.bodyRevision != syncedRevision
             syncedRevision = parent.bodyRevision
             if changed.body { assignKeepingCaret(parent.bodyText, column.bodyView) }
             let styleKey =
-                "\(parent.fontChoice.rawValue)|\(parent.fontSize)|\(parent.focusMode)|\(parent.focusDepth.rawValue)|\(parent.palette.ink)|\(parent.palette.paper)"
+                "\(parent.fontChoice.rawValue)|\(parent.fontSize)|\(parent.focusMode)|\(parent.focusDepth.rawValue)|\(parent.palette.ink)|\(parent.palette.paper)|\(parent.objects.stamp)"
             changed.style = paintedKey != styleKey
             paintedKey = styleKey
             return changed
@@ -336,10 +318,14 @@ final class ColumnView: NSView {
         }
     }
 
-    /// A ring when the picture is the selected object, a wash when a longer selection covers it.
+    /// A ring when the picture is the selected object, a wash when a longer selection covers it. A selected
+    /// region divider shows a caret at its start instead: typing there starts that region's first paragraph.
     private func drawSelection(of range: NSRange, around frame: NSRect) {
         let accent = bodyView.accent
-        if bodyView.isImageObjectSelected(range) {
+        if bodyView.isImageObjectSelected(range), bodyView.isDivider(range) {
+            accent.setFill()
+            NSRect(x: frame.minX - 8, y: frame.minY + 3, width: 2, height: frame.height - 6).fill()
+        } else if bodyView.isImageObjectSelected(range) {
             let ring = NSBezierPath(roundedRect: frame.insetBy(dx: -3, dy: -3), xRadius: 10, yRadius: 10)
             ring.lineWidth = 3
             accent.setStroke()
@@ -375,5 +361,42 @@ final class ColumnView: NSView {
         guard let layout = view.layoutManager, let container = view.textContainer else { return 36 }
         layout.ensureLayout(for: container)
         return max(36, ceil(layout.usedRect(for: container).height + view.textContainerInset.height * 2 + 8))
+    }
+}
+
+extension WritingColumn.Coordinator {
+    fileprivate func configureColumn(_ parent: WritingColumn, _ column: ColumnView) {
+        column.bodyView.placeholder = "Start writing…"
+        column.bodyView.siteURL = parent.site
+        column.bodyView.blockDefs = parent.objects.blocks
+        column.bodyView.regionLabels = parent.objects.regions
+        column.bodyView.accent = parent.palette.nsAccent
+        column.bodyView.focusMode = parent.focusMode
+        column.bodyView.focusDepth = parent.focusDepth
+        column.bodyView.typewriter = parent.typewriter
+        column.bodyView.configure(
+            look(parent, size: parent.fontSize, lineHeight: 1.32, spacing: parent.fontSize * 0.28))
+    }
+
+    fileprivate func look(_ parent: WritingColumn, size: CGFloat, lineHeight: CGFloat, spacing: CGFloat) -> TextLook {
+        TextLook(
+            font: parent.fontChoice.nsFont(size: size),
+            ink: TextInk(color: parent.palette.nsInk, muted: parent.palette.nsMuted, paper: parent.palette.nsPaper),
+            lineHeight: lineHeight,
+            paragraphSpacing: spacing
+        )
+    }
+}
+
+/// What object lines the editor draws: the site's custom blocks, and the open entry's regions by field.
+struct EditorObjects: Equatable {
+    var blocks: [String: BlockDef] = [:]
+    var regions: [String: String] = [:]
+
+    /// Changes when either does, so the text restyles.
+    var stamp: String {
+        let blockParts = blocks.values.map { "\($0.type):\($0.label):\($0.fields.map(\.actionID))" }.sorted()
+        let regionParts = regions.map { "\($0.key)=\($0.value)" }.sorted()
+        return (blockParts + regionParts).joined(separator: ",")
     }
 }

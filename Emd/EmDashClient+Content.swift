@@ -185,10 +185,20 @@ extension EmDashClient {
         var data: [String: JSONValue] = [:]
         assign(&data, collection.titleField, draft.text.title)
         if draft.sendsBody {
-            assign(&data, collection.bodyField, draft.text.body)
+            assignBody(&data, collection, draft.text.body)
         }
         assign(&data, collection.excerptField, draft.text.excerpt)
         return data
+    }
+
+    /// One body field, or each region's Markdown into its own field.
+    fileprivate static func assignBody(_ data: inout [String: JSONValue], _ collection: CollectionDef, _ body: String) {
+        let regions = collection.regionFields
+        guard !regions.isEmpty else { return assign(&data, collection.bodyField, body) }
+        let split = Regions.split(body, slugs: regions.map(\.slug))
+        for field in regions {
+            assign(&data, field, split[field.slug] ?? "")
+        }
     }
 
     fileprivate static func assign(_ data: inout [String: JSONValue], _ field: FieldDef?, _ value: String) {

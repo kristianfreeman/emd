@@ -32,6 +32,11 @@ struct EmDashClient {
         )
     }
 
+    /// The admin manifest: plugins and the custom Portable Text blocks they declare.
+    func manifest() async throws -> JSONValue {
+        try await send("GET", "/manifest")
+    }
+
     func collections() async throws -> [CollectionDef] {
         let data = try await send("GET", "/schema/collections")
         let items = data.object?["items"]?.array ?? []

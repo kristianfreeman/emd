@@ -77,11 +77,14 @@ extension AppModel {
         async let settingsTask = client.settings()
         async let collectionsTask = client.collections()
         async let taxonomiesTask = client.taxonomies()
+        async let manifestTask = client.manifest()
         let settings = try await settingsTask
         let found = try await collectionsTask
         let taxes = (try? await taxonomiesTask) ?? []
         let detailed = try await collections(found, using: client)
-        return SiteSession(settings: settings, collections: detailed, taxonomies: taxes)
+        // A site whose manifest cannot be read still opens; its custom blocks stay as they are, unedited.
+        let blocks = (try? await manifestTask).map(PageBlocks.definitions(fromManifest:)) ?? [:]
+        return SiteSession(settings: settings, collections: detailed, taxonomies: taxes, blocks: blocks)
     }
 
     private func collections(_ found: [CollectionDef], using client: EmDashClient) async throws -> [CollectionDef] {
@@ -134,6 +137,7 @@ extension AppModel {
         tagline = session.settings.tagline
         collections = ordered(session.collections)
         taxonomies = session.taxonomies
+        blockDefs = session.blocks
         defaults.set(request.url.absoluteString, forKey: "siteURL")
         defaults.set(siteTitle, forKey: "siteTitle")
         keepCollection(session.collections)
@@ -173,6 +177,7 @@ extension AppModel {
         collections = []
         leaveSite()
         taxonomies = []
+        blockDefs = [:]
         siteTitle = ""
         tagline = ""
         notice = ""
@@ -267,6 +272,7 @@ private struct SiteSession {
     var settings: SiteSettings
     var collections: [CollectionDef]
     var taxonomies: [TaxonomyInfo]
+    var blocks: [String: BlockDef]
 }
 
 private struct ConnectRequest {

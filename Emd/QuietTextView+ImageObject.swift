@@ -132,8 +132,9 @@ extension QuietTextView {
         startParagraph(after: image, with: text)
     }
 
-    /// Takes the picture's line and the blank line that set it apart.
+    /// Takes the picture's line and the blank line that set it apart. A region's divider stays.
     private func removeImage(_ image: NSRange) {
+        guard !isDivider(image) else { return NSSound.beep() }
         let ns = string as NSString
         var range = image
         while NSMaxRange(range) < ns.length, ns.character(at: NSMaxRange(range)) == 0x0A,

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0
+
+### Pages
+- Custom blocks a site's plugins declare (`portableTextBlocks` in the EmDash manifest) draw as cards in the text, with their label and settings. A double-click opens a form built from the block's fields: text, numbers with their limits, choices, and toggles. Delete removes one, like a picture.
+- Post › Insert adds a new block, grouped by its category. It is written with every field at its default and an empty `id`, as the EmDash admin writes one.
+- An entry with more than one Portable Text field, like a page's `aside` and `main`, shows every region in one column, in field order, each under a labeled divider. Dividers cannot be deleted, so each region saves back to its own field. Fields Emd does not edit, like a page's layout, stay as they are.
+- Blocks a site does not define keep the lossless passthrough they always had.
+
+### Fixes
+- Popovers for pictures and blocks open against what they point at. A form sized after showing used to shrink the popover away from its arrow.
+
+### For developers
+- The probe can open an entry in another collection, show an object's form, insert a block, and load blocks and regions for a scratch post (`/objects`); `render … frame` includes popovers.
+
 ## 0.2.0
 
 ### Writing
