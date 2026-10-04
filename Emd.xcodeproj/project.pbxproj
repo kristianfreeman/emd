@@ -12,6 +12,7 @@
 		083D32F6FEC351448EE82535 /* ProbeServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 510E668389B34AEB37881E29 /* ProbeServer.swift */; };
 		0CE6B82C34EA0A3215990382 /* AppModel+Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E3B91E333BCB82BFC901D55 /* AppModel+Session.swift */; };
 		10295CE01EAF2CCFD3972E01 /* ImageObjectTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABA2B3A87A9A7033CB97F2EC /* ImageObjectTests.swift */; };
+		13A9AF757E90916BFADBEB1D /* Footnotes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F675DD314F3162B3913901A7 /* Footnotes.swift */; };
 		172EA90A50416843CA45B334 /* AppModel+Row.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D7FFD24E0F5060EDCC2C4F4 /* AppModel+Row.swift */; };
 		18B064E5C5F26D302984F46D /* EmDashClient+Media.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C80687DA2A7F0CED7D7880 /* EmDashClient+Media.swift */; };
 		18D3D14FC7BF3A65961463C2 /* PostDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = E566229185518DB43AB60D52 /* PostDetails.swift */; };
@@ -168,6 +169,7 @@
 		F0817878FC0B116FDD3DF110 /* AppModel+Journal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Journal.swift"; sourceTree = "<group>"; };
 		F0AD548C211E764D8ECD654A /* QuietTextView+ImageObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "QuietTextView+ImageObject.swift"; sourceTree = "<group>"; };
 		F38C26F09F2A14B07F9CE5E4 /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
+		F675DD314F3162B3913901A7 /* Footnotes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Footnotes.swift; sourceTree = "<group>"; };
 		F73CF82578E805B34D585769 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		F80327E65A039D598D7CEE8B /* ListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListTests.swift; sourceTree = "<group>"; };
 		F84E5B8A2B8793FA837E62E0 /* PortableTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortableTextTests.swift; sourceTree = "<group>"; };
@@ -255,6 +257,7 @@
 				D3EBA3F06AC8E96FF1258D9C /* EmDashClient+Terms.swift */,
 				EE688DA45B08E458A0F5BEE2 /* EmDashModels.swift */,
 				C2E16C0DC5AD634CCB0AE4DF /* FocusDepth.swift */,
+				F675DD314F3162B3913901A7 /* Footnotes.swift */,
 				F38C26F09F2A14B07F9CE5E4 /* HelpView.swift */,
 				0E3F5A80AA98BF5C35E1B5CE /* ImageDetails.swift */,
 				5D69BC0BFB65D42C57D714D4 /* ImageLine.swift */,
@@ -441,6 +444,7 @@
 				B2D33132186050A06CD646A6 /* EmDashClient.swift in Sources */,
 				32B02F28EFA8A09FEFAC52C7 /* EmDashModels.swift in Sources */,
 				AAD33F4369E1F536176ACE99 /* FocusDepth.swift in Sources */,
+				13A9AF757E90916BFADBEB1D /* Footnotes.swift in Sources */,
 				597E59192CA9DF81AF28BF85 /* HelpView.swift in Sources */,
 				69F422E4C99CA13602561967 /* ImageDetails.swift in Sources */,
 				F7A68E414C65376C2C8F45E5 /* ImageLine.swift in Sources */,

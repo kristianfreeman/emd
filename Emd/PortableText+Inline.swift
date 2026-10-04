@@ -5,9 +5,10 @@ extension PortableText {
     typealias Inline = (spans: [JSONValue], markDefs: [JSONValue])
 
     /// `**` and `__` are strong, `*` and `_` are em. An underscore inside a word is just an underscore.
+    /// A footnote reference comes before links, so `[^1] and [a](b)` is not one long link.
     private static let inlineExpression = try? NSRegularExpression(
         pattern: #"(\*\*(.+?)\*\*)|(__(.+?)__)|(\*(.+?)\*)|((?<![\p{L}\p{N}])_(.+?)_(?![\p{L}\p{N}]))"#
-            + #"|(`(.+?)`)|(\[(.+?)\]\((.+?)\))|(~~(.+?)~~)"#
+            + #"|(`(.+?)`)|(\[\^([\p{L}\p{N}_-]+)\](?!:))|(\[(.+?)\]\((.+?)\))|(~~(.+?)~~)"#
     )
 
     /// A capture group holding inner text, the mark it carries, and whether marks can nest inside it.
@@ -20,7 +21,7 @@ extension PortableText {
     private static let markGroups = [
         MarkGroup(group: 2, mark: "strong"), MarkGroup(group: 4, mark: "strong"),
         MarkGroup(group: 6, mark: "em"), MarkGroup(group: 8, mark: "em"),
-        MarkGroup(group: 10, mark: "code", nests: false), MarkGroup(group: 15, mark: "strike-through"),
+        MarkGroup(group: 10, mark: "code", nests: false), MarkGroup(group: 17, mark: "strike-through"),
     ]
 
     static let escapable: [Character] = ["\\", "*", "_", "`", "[", "]", "~"]
@@ -57,6 +58,7 @@ extension PortableText {
         marks: [String],
         defs: inout [JSONValue]
     ) -> [JSONValue] {
+        if let note = footnoted(match, ns: ns, marks: marks, defs: &defs) { return note }
         if let link = linked(match, ns: ns, marks: marks, defs: &defs) { return link }
         guard let found = markGroups.first(where: { match.range(at: $0.group).location != NSNotFound }) else {
             return [span(ns.substring(with: match.range), marks: marks)]
@@ -72,13 +74,29 @@ extension PortableText {
         marks: [String],
         defs: inout [JSONValue]
     ) -> [JSONValue]? {
-        let label = match.range(at: 12)
-        let href = match.range(at: 13)
+        let label = match.range(at: 14)
+        let href = match.range(at: 15)
         guard label.location != NSNotFound, href.location != NSNotFound else { return nil }
         let mark = key()
         defs.append(
             .object(["_key": .string(mark), "_type": .string("link"), "href": .string(ns.substring(with: href))]))
         return parse(ns.substring(with: label), marks: marks + [mark], defs: &defs)
+    }
+
+    /// `[^1]` is a superscript label linked to its note at the foot of the post: two marks every EmDash site draws.
+    private static func footnoted(
+        _ match: NSTextCheckingResult,
+        ns: NSString,
+        marks: [String],
+        defs: inout [JSONValue]
+    ) -> [JSONValue]? {
+        let label = match.range(at: 12)
+        guard label.location != NSNotFound else { return nil }
+        let text = ns.substring(with: label)
+        let mark = key()
+        defs.append(
+            .object(["_key": .string(mark), "_type": .string("link"), "href": .string(Footnotes.anchor(text))]))
+        return [span(text, marks: marks + ["superscript", mark])]
     }
 
     // MARK: Escapes

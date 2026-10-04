@@ -52,7 +52,10 @@
         /// The editor as PNG, drawn in the app, so no screen-recording permission is needed. It is the visible
         /// page with its paper and gutter.
         /// `?what=window` draws the whole window instead; SwiftUI toolbar parts may come out blank that way.
+        /// `?what=frame` is the window as the screen shows it, title bar and toolbar too. An app may image its own
+        /// windows without screen-recording permission.
         func render(_ request: ProbeRequest) -> ProbeResponse {
+            if request.query["what"] == "frame" { return framed() }
             let target = request.query["what"] == "window" ? view?.window?.contentView : view?.enclosingScrollView
             guard let target, target.bounds.width > 0 else { return Self.failure("Nothing to draw.") }
             let bounds = target.bounds
@@ -63,6 +66,15 @@
             guard let png = rep.representation(using: .png, properties: [:]) else {
                 return Self.failure("Could not encode.")
             }
+            return .png(png)
+        }
+
+        private func framed() -> ProbeResponse {
+            guard let number = view?.window?.windowNumber,
+                let image = CGWindowListCreateImage(
+                    .null, .optionIncludingWindow, CGWindowID(number), [.boundsIgnoreFraming, .bestResolution]),
+                let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])
+            else { return Self.failure("Could not image the window.") }
             return .png(png)
         }
 

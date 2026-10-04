@@ -90,13 +90,14 @@
             view.doCommand(by: NSSelectorFromString(name + ":"))
         }
 
-        /// `{"style": "bold" | "italic" | "code"}`, as the Format menu does.
+        /// `{"style": "bold" | "italic" | "code" | "footnote"}`, as the Format menu does.
         func format(_ request: ProbeRequest) -> ProbeResponse {
-            let markers = ["bold": "**", "italic": "_", "code": "`"]
+            let markers = ["bold": "**", "italic": "_", "code": "`", "footnote": ""]
             guard let view, let marker = markers[request.body.object?["style"]?.string ?? ""] else {
-                return Self.failure("Open a post and send {\"style\": \"bold\" | \"italic\" | \"code\"}.")
+                return Self.failure(
+                    "Open a post and send {\"style\": \"bold\" | \"italic\" | \"code\" | \"footnote\"}.")
             }
-            view.toggleMarker(marker)
+            if marker.isEmpty { view.insertFootnote() } else { view.toggleMarker(marker) }
             return .json(.object(["selection": Self.range(view.selectedRange())]))
         }
 

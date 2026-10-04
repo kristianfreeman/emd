@@ -72,6 +72,7 @@ struct MarkdownRun: Equatable {
         case italic
         case code
         case link
+        case footnote
     }
 
     var kind: Kind
@@ -83,6 +84,7 @@ enum MarkdownRuns {
     private static let pattern =
         #"(?<!\\)\*\*(.+?)\*\*|(?<!\\)__(.+?)__|(?<![\*\\])\*(?!\*)(.+?)\*(?!\*)"#
         + #"|(?<![_\\\p{L}\p{N}])_(?!_)(.+?)_(?![_\p{L}\p{N}])|(?<!\\)`([^`]+)`|(?<!\\)\[([^\]]+)\]\(([^)\s]+)\)"#
+        + #"|(?<!\\)\[\^([\p{L}\p{N}_-]+)\](?!:)"#
     private static let expression = try? NSRegularExpression(pattern: pattern)
 
     static func inline(in line: String) -> [MarkdownRun] {
@@ -106,7 +108,8 @@ enum MarkdownRuns {
 
     private static func codeOrLink(_ match: NSTextCheckingResult) -> MarkdownRun? {
         if let run = captured(match, group: 5, kind: .code) { return run }
-        return captured(match, group: 6, kind: .link)
+        if let run = captured(match, group: 6, kind: .link) { return run }
+        return captured(match, group: 8, kind: .footnote)
     }
 
     private static func captured(_ match: NSTextCheckingResult, group: Int, kind: MarkdownRun.Kind) -> MarkdownRun? {

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0 (unreleased)
+
+### Writing
+- Footnotes: `[^1]` in the text and `[^1]: The note.` below. References draw small and raised, notes draw as notes, and Format › Footnote (⌥⌘N) adds the next one and its note at the end of the post; from a note it goes back to the text.
+- On the site a reference is a superscript linked to its note, and the notes are one block at that spot, so any EmDash site draws them and the admin editor still opens the post.
+
+### Toolbar
+- Publish is an icon: a paper plane to publish, an arrow to update, and a quiet check or clock when there is nothing to send.
+- Publishing and uploading show a spinner inside their own button, so the toolbar no longer shifts while they run.
+
+### For developers
+- `scripts/probe render out.png frame` draws the whole window, toolbar included, and the probe's format route takes `footnote`.
+
 ## 0.1.0
 
 The first release of Emd, a native Mac app for writing on an EmDash site.

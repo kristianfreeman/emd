@@ -23,7 +23,7 @@ auth=(-H "X-Probe-Token: $token")
 if [[ "${1:-}" == "render" ]]; then
   out="${2:-editor.png}"
   query=""
-  [[ "${3:-}" == "window" ]] && query="?what=window"
+  [[ -n "${3:-}" ]] && query="?what=$3"
   curl -sS --fail-with-body "${auth[@]}" "$base/render$query" -o "$out"
   echo "$out"
   exit 0

@@ -56,6 +56,11 @@ extension PortableText {
         if type == "image" {
             return appendImage(block, index: index, lines: &lines)
         }
+        if let notes = Footnotes.lines(block) {
+            separate(&lines, index: index, when: true)
+            lines += notes
+            return false
+        }
         return appendOpaque(block, index: index, lines: &lines)
     }
 
@@ -166,12 +171,27 @@ extension PortableText {
 
     private static func renderedSpan(_ value: JSONValue, markDefs: [JSONValue], escaping: Bool) -> String {
         guard let span = value.object, span["_type"]?.string == "span" else { return "" }
-        let marks = span["marks"]?.array?.compactMap(\.string) ?? []
+        var marks = span["marks"]?.array?.compactMap(\.string) ?? []
         let text = span["text"]?.string ?? ""
+        if let reference = footnoteMark(marks, text: text, markDefs: markDefs) {
+            marks.removeAll { $0 == reference || $0 == "superscript" }
+            return marks.reduce("[^\(text)]") { text, mark in apply(mark: mark, to: text, markDefs: markDefs) }
+        }
         // Code keeps its characters as written; the parser does not look inside backticks.
         let body = escaping && !marks.contains("code") ? escaped(text) : text
         return marks.reduce(body) { text, mark in
             apply(mark: mark, to: text, markDefs: markDefs)
+        }
+    }
+
+    /// The link mark that makes a superscript label a footnote reference: it points at `#fn-<label>`.
+    private static func footnoteMark(_ marks: [String], text: String, markDefs: [JSONValue]) -> String? {
+        guard marks.contains("superscript"), !marks.contains("code") else { return nil }
+        return marks.first { mark in
+            markDefs.compactMap(\.object).contains {
+                $0["_key"]?.string == mark && $0["_type"]?.string == "link"
+                    && $0["href"]?.string == Footnotes.anchor(text) && $0.count == 3
+            }
         }
     }
 

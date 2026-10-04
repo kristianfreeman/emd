@@ -113,12 +113,9 @@ private struct EditorToolbar: ToolbarContent {
     var palette: Palette
 
     var body: some ToolbarContent {
+        // Work in progress shows inside the button doing it, so nothing appears or leaves while a save or publish
+        // runs and the items never shift.
         ToolbarItemGroup(placement: .primaryAction) {
-            if model.busy || model.uploadsInFlight > 0 {
-                ProgressView()
-                    .controlSize(.small)
-                    .help(model.uploadsInFlight > 0 ? "Uploading images" : "Working")
-            }
             if !model.notice.isEmpty {
                 NoticeButton(model: model, palette: palette)
             }
@@ -127,9 +124,14 @@ private struct EditorToolbar: ToolbarContent {
                 Button {
                     model.chooseImages()
                 } label: {
-                    Label("Insert Image", systemImage: "photo")
+                    Working(active: model.uploadsInFlight > 0) {
+                        Label("Insert Image", systemImage: "photo")
+                    }
                 }
-                .help("Insert Image… (⇧⌘I). You can also drop or paste images into the text.")
+                .help(
+                    model.uploadsInFlight > 0
+                        ? "Uploading images" : "Insert Image… (⇧⌘I). You can also drop or paste images into the text."
+                )
                 .disabled(model.client == nil)
                 PublishButton(model: model, state: model.postState(document))
             }
@@ -216,19 +218,25 @@ private struct NoticeDetail: View {
     }
 }
 
-/// Publish or Update when there is something to send, then a menu for the rest.
-/// A toolbar draws a Menu as its icon alone, so the words live on a plain button beside it.
+/// Publish or Update as an icon that is always there, then a menu for the rest. It stays put when there is
+/// nothing to send, as a quiet mark of the post's state, and shows the spinner while a publish runs.
 private struct PublishButton: View {
     var model: AppModel
     var state: PostState
 
     var body: some View {
-        if state.canPublish {
-            Button(state.publishTitle) { Task { await model.publish() } }
-                .buttonStyle(.borderedProminent)
-                .disabled(model.busy)
-                .help(state.isLive ? "Publish unpublished changes (⇧⌘P)" : "Publish this post (⇧⌘P)")
+        Button {
+            Task { await model.publish() }
+        } label: {
+            Working(active: model.busy) {
+                Label(state.publishTitle, systemImage: state.publishSymbol)
+            }
         }
+        .labelStyle(.iconOnly)
+        .tint(state.canPublish ? .accentColor : nil)
+        .buttonStyle(.borderedProminent)
+        .disabled(!state.canPublish || model.busy)
+        .help(publishHelp)
         Menu {
             PostActions(model: model, state: state, includesPublish: false)
         } label: {
@@ -243,6 +251,35 @@ private struct PublishButton: View {
                 Task { await model.schedule(at: date) }
             }
         }
+    }
+}
+
+/// A toolbar icon that turns into a spinner of the same size while its work runs.
+private struct Working<Content: View>: View {
+    var active: Bool
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        ZStack {
+            content
+                .opacity(active ? 0 : 1)
+            if active {
+                ProgressView()
+                    .controlSize(.small)
+                    .scaleEffect(0.8)
+            }
+        }
+    }
+}
+
+extension PublishButton {
+    fileprivate var publishHelp: String {
+        if model.busy { return "Working…" }
+        if state.canPublish {
+            return state.isLive ? "\(state.publishTitle): publish unpublished changes (⇧⌘P)" : "Publish this post (⇧⌘P)"
+        }
+        if state.isLive { return state.label }
+        return "Write something to publish"
     }
 }
 

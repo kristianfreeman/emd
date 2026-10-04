@@ -77,9 +77,10 @@ enum WriterText {
 
     private static let linkTarget = try? NSRegularExpression(pattern: #"\]\([^)\s]*\)"#)
     private static let lineMarker = try? NSRegularExpression(pattern: #"^\s*(?:[-*+]|\d+[.)]|#{1,6}|>)\s+"#)
+    private static let footnoteLabel = try? NSRegularExpression(pattern: #"\[\^[\p{L}\p{N}_-]+\]:?"#)
 
     private static func prose(_ line: String) -> String {
-        [lineMarker, linkTarget].compactMap { $0 }.reduce(line) { text, expression in
+        [lineMarker, linkTarget, footnoteLabel].compactMap { $0 }.reduce(line) { text, expression in
             let range = NSRange(location: 0, length: (text as NSString).length)
             return expression.stringByReplacingMatches(in: text, range: range, withTemplate: " ")
         }

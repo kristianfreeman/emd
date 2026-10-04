@@ -131,6 +131,8 @@ private struct FormatMenu: View {
         Divider()
         Button("Link…") { model.editorView?.editLink() }
             .keyboardShortcut("k", modifiers: .command)
+        Button("Footnote") { model.editorView?.insertFootnote() }
+            .keyboardShortcut("n", modifiers: [.command, .option])
     }
 }
 

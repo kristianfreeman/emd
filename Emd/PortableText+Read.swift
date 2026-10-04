@@ -37,10 +37,18 @@ extension PortableText {
             blocks.append(image)
             return index + 1
         }
-        if line.trimmingCharacters(in: .whitespaces).isEmpty {
-            return index + 1
+        return consumeNotes(lines, at: index, blocks: &blocks)
+    }
+
+    /// Footnote lines, gathered into one block, and blank lines, which make no block.
+    private static func consumeNotes(_ lines: [String], at index: Int, blocks: inout [JSONValue]) -> Int? {
+        let line = lines[index]
+        if Footnotes.definition(line) != nil {
+            let run = Footnotes.run(lines, from: index)
+            blocks.append(.object(Footnotes.block(run.notes)))
+            return run.next
         }
-        return nil
+        return line.trimmingCharacters(in: .whitespaces).isEmpty ? index + 1 : nil
     }
 
     private static func consumeFence(_ lines: [String], at index: Int, blocks: inout [JSONValue]) -> Int {

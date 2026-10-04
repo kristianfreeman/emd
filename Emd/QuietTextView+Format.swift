@@ -38,6 +38,55 @@ extension QuietTextView {
         setSelectedRange(select)
     }
 
+    // MARK: Footnotes
+
+    /// Format › Footnote: `[^n]` at the caret and its note line at the end of the post, where the caret goes.
+    /// From a note line it goes back to just after that note's reference.
+    func insertFootnote() {
+        let ns = string as NSString
+        let selection = selectedRange()
+        let line = ns.substring(with: ns.lineRange(for: NSRange(location: selection.location, length: 0)))
+        if let note = Footnotes.definition(line.trimmingCharacters(in: .newlines)) {
+            return returnToReference(note.label, ns: ns)
+        }
+        let label = String(nextFootnoteNumber())
+        let reference = "[^\(label)]"
+        let at = NSMaxRange(selection)
+        undoManager?.beginUndoGrouping()
+        defer { undoManager?.endUndoGrouping() }
+        replaceRange(NSRange(location: at, length: 0), with: reference, select: NSRange(location: at, length: 0))
+        let end = (string as NSString).length
+        let note = footnoteGap() + "[^\(label)]: "
+        replaceRange(
+            NSRange(location: end, length: 0), with: note,
+            select: NSRange(location: end + (note as NSString).length, length: 0))
+        scrollRangeToVisible(selectedRange())
+    }
+
+    /// Notes gather in one run: a new one goes on the next line after another note, or after a blank line.
+    private func footnoteGap() -> String {
+        let text = string
+        guard !text.isEmpty else { return "" }
+        let last = text.split(separator: "\n", omittingEmptySubsequences: false).last.map(String.init) ?? ""
+        if Footnotes.definition(last) != nil { return "\n" }
+        if text.hasSuffix("\n\n") { return "" }
+        return text.hasSuffix("\n") ? "\n" : "\n\n"
+    }
+
+    /// One more than the highest numbered footnote, so a new note never reuses a label.
+    func nextFootnoteNumber() -> Int {
+        let labels = string.matches(of: /\[\^(\d+)\]/).compactMap { Int($0.output.1) }
+        return (labels.max() ?? 0) + 1
+    }
+
+    private func returnToReference(_ label: String, ns: NSString) {
+        let found = ns.range(of: "[^\(label)]", options: .literal)
+        let note = ns.range(of: "[^\(label)]:", options: .literal)
+        guard found.location != NSNotFound, found.location != note.location else { return NSSound.beep() }
+        setSelectedRange(NSRange(location: NSMaxRange(found), length: 0))
+        scrollRangeToVisible(selectedRange())
+    }
+
     // MARK: Links
 
     /// The whole `[label](address)` around the selection, with its label and address.

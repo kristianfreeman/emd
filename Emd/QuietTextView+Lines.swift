@@ -40,6 +40,7 @@ extension QuietTextView {
         if isFence(text) { return fenceResult(context, style: &style) }
         if context.inCode { return codeResult(context, style: &style) }
         if styleImageLine(context, text: text, style: &style) { return false }
+        if styleFootnoteLine(context, text: text, style: &style) { return false }
         styleListLine(context.line, text: text, style: &style)
         styleProse(context.line, text: text, editing: context.editing, style: &style)
         return false
@@ -122,7 +123,34 @@ extension QuietTextView {
         case .link:
             storage.addAttribute(.foregroundColor, value: accent, range: range)
             storage.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
+        case .footnote:
+            storage.addAttributes(Self.raised(font, color: accent), range: range)
         }
+    }
+
+    /// A footnote label: small, raised, and in the accent, the way the site draws it.
+    static func raised(_ font: NSFont, color: NSColor) -> [NSAttributedString.Key: Any] {
+        [
+            .font: MarkdownFonts.sized(font, font.pointSize * 0.72),
+            .baselineOffset: font.pointSize * 0.3,
+            .foregroundColor: color,
+        ]
+    }
+
+    /// `[^1]: The note.` reads as a note: a little smaller, its label raised like the reference.
+    func styleFootnoteLine(_ context: LineContext, text: String, style: inout LineStyle) -> Bool {
+        guard let match = text.firstMatch(of: /^\[\^[\p{L}\p{N}_-]+\]:/) else { return false }
+        let small = MarkdownFonts.sized(style.base, style.base.pointSize * 0.9)
+        style.storage.addAttribute(.font, value: small, range: strippedNewline(context.line, ns: context.ns))
+        let length = text.utf16.distance(from: match.range.lowerBound, to: match.range.upperBound)
+        let label = NSRange(location: context.line.location + 2, length: length - 4)
+        style.storage.addAttributes(Self.raised(small, color: accent), range: label)
+        noteMarkers(NSRange(location: context.line.location, length: 2), editing: true, style: &style)
+        noteMarkers(NSRange(location: NSMaxRange(label), length: 2), editing: true, style: &style)
+        for run in MarkdownRuns.inline(in: text) {
+            paint(run, on: context.line, font: small, style: &style)
+        }
+        return true
     }
 
     func caretTouches(_ range: NSRange) -> Bool {
